@@ -30,9 +30,9 @@ classifiers = [
 dependencies = []
 
 [project.urls]
-Homepage = "https://github.com/hectorespert/pyboinc"
-Changelog = "https://github.com/hectorespert/pyboinc/blob/main/CHANGELOG.md"
-Issues = "https://github.com/hectorespert/pyboinc/issues"
+Homepage = "https://github.com/hectorespert/aioboinc"
+Changelog = "https://github.com/hectorespert/aioboinc/blob/main/CHANGELOG.md"
+Issues = "https://github.com/hectorespert/aioboinc/issues"
 Upstream = "https://github.com/nielstron/pyboinc"
 
 [tool.hatch.build.targets.wheel]

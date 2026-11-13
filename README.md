@@ -1,6 +1,6 @@
 # aioboinc
 
-[![Test](https://github.com/hectorespert/pyboinc/actions/workflows/test.yml/badge.svg)](https://github.com/hectorespert/pyboinc/actions/workflows/test.yml)
+[![Test](https://github.com/hectorespert/aioboinc/actions/workflows/test.yml/badge.svg)](https://github.com/hectorespert/aioboinc/actions/workflows/test.yml)
 [![PyPI](https://img.shields.io/pypi/v/aioboinc)](https://pypi.org/project/aioboinc/)
 
 A small package to talk to a [BOINC](https://boinc.berkeley.edu/) client from Python using asyncio,
