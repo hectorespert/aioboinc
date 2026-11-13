@@ -34,6 +34,21 @@ class _RPCClientRaw:
     async def connect(self):
         self._reader, self._writer = await asyncio.open_connection(self.host, self.port, family=AF_INET, limit=1024*5000)
 
+    async def close(self):
+        """
+        Close the connection to the RPC server
+        Safe to call more than once, or without having connected
+        """
+        if self._writer is None:
+            return
+        writer, self._reader, self._writer = self._writer, None, None
+        writer.close()
+        try:
+            await writer.wait_closed()
+        except (ConnectionError, OSError):
+            # The peer may already be gone; the socket is released either way.
+            pass
+
     async def _write(self, message: bytes):
         if self._writer is None:
             raise ConnectionError("Connection to {} was not opened before writing".format(self.host))

@@ -57,6 +57,14 @@ class RPCClient:
             await self._raw_client.connect()
             self.connected = True
 
+    async def close(self):
+        """
+        Close the connection to the RPC server
+        The client can be connected again afterwards
+        """
+        await self._raw_client.close()
+        self.connected = False
+
     async def authorize(self, password=None):
         """
         Authenticate at the server with given password
