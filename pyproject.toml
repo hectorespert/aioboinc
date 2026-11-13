@@ -9,7 +9,7 @@ description = "Asyncio client for the BOINC GUI RPC protocol: monitor and contro
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [{ name = "nielstron", email = "n.muendler@web.de" }]
 maintainers = [{ name = "Hector Espert" }]
 keywords = ["boinc", "asyncio", "rpc", "gui rpc", "volunteer computing"]
@@ -19,11 +19,11 @@ classifiers = [
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering",
     "Topic :: Software Development :: Libraries",
 ]
