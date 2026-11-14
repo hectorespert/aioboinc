@@ -24,6 +24,26 @@ jobs:
       - name: Run the tests
         run: python -m unittest discover -s tests -t .
 
+  # Fails below the threshold set in pyproject.toml. Publishing reuses this workflow, so a release
+  # cannot go out below it either. Reporting on pull requests is coverage.yml's job, which needs
+  # write permissions this one should not have.
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Run the tests under coverage
+        run: |
+          python -m pip install coverage
+          python -m coverage run -m unittest discover -s tests -t .
+      - name: Write the report to the job summary
+        if: always()
+        run: python -m coverage report --format=markdown --fail-under=0 >> "$GITHUB_STEP_SUMMARY"
+      - name: Fail below the threshold
+        run: python -m coverage report
+
   build:
     runs-on: ubuntu-latest
     steps:

@@ -40,3 +40,15 @@ packages = ["aioboinc"]
 
 [tool.hatch.build.targets.sdist]
 include = ["/aioboinc", "/tests", "/example.py", "/CHANGELOG.md"]
+
+[tool.coverage.run]
+branch = true
+source = ["aioboinc"]
+# Needed by the action that reports coverage on pull requests.
+relative_files = true
+# Nothing but constants: importing them covers them, so they say nothing about the tests.
+omit = ["aioboinc/_tag.py", "aioboinc/_constants.py"]
+
+[tool.coverage.report]
+fail_under = 95
+show_missing = true

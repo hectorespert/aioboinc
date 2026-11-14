@@ -1,0 +1,43 @@
+name: Coverage
+
+# Reports coverage: a comment on each pull request, and the badge in the README on main.
+# It never fails a build; the threshold is enforced by the coverage job in test.yml.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions: {}
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    permissions:
+      # GitHub downgrades both to read-only on pull requests from forks, so they grant nothing to
+      # untrusted code. Those pull requests get their comment from coverage-comment.yml instead.
+      pull-requests: write  # post or update the comment
+      contents: write  # push the badge data to the python-coverage-comment-action-data branch
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Run the tests under coverage
+        run: |
+          python -m pip install coverage
+          python -m coverage run -m unittest discover -s tests -t .
+      - name: Report the coverage
+        id: coverage_comment
+        uses: py-cov-action/python-coverage-comment-action@e5fb2218463c3377f3504b0c5b5646ed53da7a2f # v4.5
+        with:
+          GITHUB_TOKEN: ${{ github.token }}
+          MINIMUM_GREEN: 95
+          MINIMUM_ORANGE: 80
+      - name: Keep the comment for coverage-comment.yml to post
+        if: steps.coverage_comment.outputs.COMMENT_FILE_WRITTEN == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-coverage-comment-action
+          path: python-coverage-comment-action.txt

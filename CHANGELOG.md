@@ -12,5 +12,6 @@ at its last commit (`f8a31de`, 2022-10-16) plus:
   temporary change is temporary.
 - **Added** `RPCClient.close()`. The connection was never closed, which leaked a socket for every
   client created.
-- Tests run against a fake BOINC client instead of needing a real one on `localhost`.
+- Tests run against a fake BOINC client instead of needing a real one on `localhost`, and cover
+  every request the client can make.
 - Requires Python 3.10 or later.

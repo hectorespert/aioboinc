@@ -1,77 +1,16 @@
 """
-Tests for the RPC client against a fake BOINC client
-
-The fake speaks just enough of the GUI RPC framing to record what was sent and answer with a canned
-reply, so nothing here needs a real BOINC client or the network.
+Tests for connecting, authorizing, changing modes and closing
 """
 
 import asyncio
 import unittest
 from hashlib import md5
+from unittest import mock
 
-from aioboinc import init_rpc_client
 from aioboinc.rpc_client import BOINCClientError, Mode, RPCClient
 
+from .fake_boinc import RPCClientTestCase
 from .fixtures import web_state
-
-END_OF_MESSAGE = b"\x03"
-ENCODING = "ISO-8859-1"
-SUCCESS = "<boinc_gui_rpc_reply><success/></boinc_gui_rpc_reply>"
-
-
-def _unwrap(request: str) -> str:
-    """Strip the request envelope, leaving the element the caller built"""
-    prefix, suffix = "<boinc_gui_rpc_request>", "</boinc_gui_rpc_request>"
-    assert request.startswith(prefix) and request.endswith(suffix), request
-    return request[len(prefix):-len(suffix)]
-
-
-class FakeBoinc:
-    """
-    Answers every request with the next reply in `replies`, or `default` once they run out
-    """
-
-    def __init__(self, replies=(), default=SUCCESS):
-        self.replies = list(replies)
-        self.default = default
-        self.requests = []
-        self.disconnected = asyncio.Event()
-        self._server = None
-
-    async def start(self):
-        self._server = await asyncio.start_server(self._handle, "127.0.0.1", 0)
-        return self._server.sockets[0].getsockname()[1]
-
-    async def stop(self):
-        self._server.close()
-        await self._server.wait_closed()
-
-    async def _handle(self, reader, writer):
-        try:
-            while True:
-                try:
-                    message = await reader.readuntil(END_OF_MESSAGE)
-                except (asyncio.IncompleteReadError, ConnectionError):
-                    break
-                self.requests.append(_unwrap(str(message[:-1], encoding=ENCODING)))
-                reply = self.replies.pop(0) if self.replies else self.default
-                writer.write(bytes(reply, encoding=ENCODING) + END_OF_MESSAGE)
-                await writer.drain()
-        finally:
-            self.disconnected.set()
-            writer.close()
-
-
-class RPCClientTestCase(unittest.IsolatedAsyncioTestCase):
-
-    replies = ()
-
-    async def asyncSetUp(self):
-        self.boinc = FakeBoinc(self.replies)
-        port = await self.boinc.start()
-        self.addAsyncCleanup(self.boinc.stop)
-        self.client = await init_rpc_client("127.0.0.1", "secret", port)
-        self.addAsyncCleanup(self.client.close)
 
 
 class SetModeTest(RPCClientTestCase):
@@ -116,6 +55,14 @@ class AuthorizeTest(RPCClientTestCase):
             self.boinc.requests,
             ["<auth1/>", "<auth2><nonce_hash>{}</nonce_hash></auth2>".format(expected)],
         )
+
+    async def test_a_password_given_later_replaces_the_first(self):
+        self.assertIs(await self.client.authorize("other"), True)
+        expected = md5(b"1234.5678other").hexdigest()
+        self.assertEqual(
+            self.boinc.requests[1], "<auth2><nonce_hash>{}</nonce_hash></auth2>".format(expected)
+        )
+        self.assertEqual(self.client.password, "other")
 
     async def test_without_a_password_sends_nothing(self):
         self.client.password = None
@@ -169,11 +116,38 @@ class QueryTest(RPCClientTestCase):
         self.assertEqual(status["task_mode_delay"], 0.0)
 
 
+class InvalidReplyTest(RPCClientTestCase):
+
+    replies = ("<html/>",)
+
+    async def test_a_reply_without_the_envelope_raises(self):
+        with self.assertRaisesRegex(ConnectionError, "invalid response"):
+            await self.client.get_cc_status()
+
+
+class ConnectTest(RPCClientTestCase):
+
+    async def test_connecting_twice_keeps_the_same_connection(self):
+        await self.client.connect()
+        self.assertIs(await self.client.set_run_mode(Mode.AUTO), True)
+        self.assertFalse(self.boinc.disconnected.is_set())
+
+
 class CloseTest(RPCClientTestCase):
 
     async def test_close_hangs_up(self):
         await self.client.close()
         await asyncio.wait_for(self.boinc.disconnected.wait(), timeout=5)
+        self.assertFalse(self.client.connected)
+
+    async def test_close_survives_a_peer_that_is_already_gone(self):
+        writer = self.client._raw_client._writer
+
+        async def reset():
+            raise ConnectionResetError()
+
+        with mock.patch.object(writer, "wait_closed", reset):
+            await self.client.close()
         self.assertFalse(self.client.connected)
 
     async def test_close_twice_is_harmless(self):
@@ -199,6 +173,10 @@ class NeverConnectedTest(unittest.IsolatedAsyncioTestCase):
     async def test_request_raises(self):
         with self.assertRaises(ConnectionError):
             await RPCClient("127.0.0.1").get_cc_status()
+
+    async def test_receiving_raises(self):
+        with self.assertRaises(ConnectionError):
+            await RPCClient("127.0.0.1")._raw_client.receive()
 
 
 if __name__ == "__main__":

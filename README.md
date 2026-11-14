@@ -82,6 +82,16 @@ python -m unittest discover -s tests -t .
 
 The tests talk to a fake BOINC client on a local socket; no BOINC installation is needed.
 
+To see what the tests cover, run them under [coverage.py](https://coverage.readthedocs.io/):
+
+```
+pip install coverage
+coverage run -m unittest discover -s tests -t .
+coverage report
+```
+
+CI fails below 95 %, and every pull request gets a comment with what it changes.
+
 ## License
 
 MIT, see [LICENSE](LICENSE). Copyright of the original work remains with its author.
