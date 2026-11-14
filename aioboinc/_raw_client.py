@@ -10,6 +10,7 @@ Note that this client is Async, based on asyncio
 
 import asyncio
 from socket import AF_INET
+from typing import Optional
 import xml.etree.ElementTree as ET
 
 
@@ -29,7 +30,8 @@ class _RPCClientRaw:
     def __init__(self, host: str, port=GUI_RPC_DEFAULT_PORT):
         self.host = host
         self.port = port
-        self._reader = self._writer = None
+        self._reader: Optional[asyncio.StreamReader] = None
+        self._writer: Optional[asyncio.StreamWriter] = None
 
     async def connect(self):
         self._reader, self._writer = await asyncio.open_connection(self.host, self.port, family=AF_INET, limit=1024*5000)

@@ -92,6 +92,13 @@ coverage report
 
 CI fails below 95 %, and every pull request gets a comment with what it changes.
 
+Types are checked with [mypy](https://mypy-lang.org/), which CI also requires to pass:
+
+```
+pip install mypy
+mypy
+```
+
 ## License
 
 MIT, see [LICENSE](LICENSE). Copyright of the original work remains with its author.

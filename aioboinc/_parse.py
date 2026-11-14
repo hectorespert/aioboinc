@@ -1,6 +1,7 @@
 from ._tag import Tag
 from xml.etree import ElementTree as ET
 from datetime import datetime, timedelta
+from typing import Any, Callable, Dict, List, Set, Tuple
 
 INTEGER_TAG = {
     Tag.MAJOR,
@@ -140,7 +141,7 @@ TIME_TAG = {
     Tag.NEXT_REQUEST_TIME,
 }
 
-TAG_PARSER = {
+TAG_PARSER: Dict[str, Callable[[str], Any]] = {
     Tag.BODY: lambda x: x.replace("<![CDATA[", "").replace("]]>", "").strip(),
     Tag.PROJECT_URL: lambda x: Project(master_url=x)
 }
@@ -149,13 +150,14 @@ FLOAT_TAG_PARSER = float
 TIME_TAG_PARSER = lambda x: datetime.fromtimestamp(float(x))
 TIMEDELTA_TAG_PARSER = lambda x: timedelta(seconds=float(x))
 BOOL_TAG_PARSER = bool
-for parser_func, tags in [
+_PARSERS: List[Tuple[Callable[[str], Any], Set[str]]] = [
     (INTEGER_TAG_PARSER, INTEGER_TAG),
     (FLOAT_TAG_PARSER, FLOAT_TAG),
     (TIME_TAG_PARSER, TIME_TAG),
     (TIMEDELTA_TAG_PARSER, TIMEDELTA_TAG),
     (BOOL_TAG_PARSER, BOOL_TAG),
-]:
+]
+for parser_func, tags in _PARSERS:
     TAG_PARSER.update((tag, parser_func) for tag in tags)
 
 

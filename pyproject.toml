@@ -52,3 +52,11 @@ omit = ["aioboinc/_tag.py", "aioboinc/_constants.py"]
 [tool.coverage.report]
 fail_under = 95
 show_missing = true
+
+[tool.mypy]
+files = ["aioboinc"]
+# The oldest version supported, so nothing newer slips in unnoticed.
+python_version = "3.10"
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unreachable = true
