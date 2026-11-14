@@ -1,6 +1,7 @@
 # aioboinc
 
 [![Test](https://github.com/hectorespert/aioboinc/actions/workflows/test.yml/badge.svg)](https://github.com/hectorespert/aioboinc/actions/workflows/test.yml)
+[![Coverage](https://raw.githubusercontent.com/hectorespert/aioboinc/python-coverage-comment-action-data/badge.svg)](https://htmlpreview.github.io/?https://github.com/hectorespert/aioboinc/blob/python-coverage-comment-action-data/htmlcov/index.html)
 [![PyPI](https://img.shields.io/pypi/v/aioboinc)](https://pypi.org/project/aioboinc/)
 
 A small package to talk to a [BOINC](https://boinc.berkeley.edu/) client from Python using asyncio,
