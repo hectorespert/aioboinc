@@ -118,6 +118,13 @@ class ProjectStatusTest(RPCClientTestCase):
         self.assertNotEqual(project, "http://www.gpugrid.net/")
         self.assertTrue(repr(project).startswith("<Project https://csgrid.org/csg/, {"))
 
+    async def test_a_project_can_be_a_dict_key_or_a_set_member(self):
+        csgrid, gpugrid = await self.client.get_project_status()
+        self.assertEqual({csgrid, gpugrid, Project(master_url="https://csgrid.org/csg/")}, {csgrid, gpugrid})
+        tasks = {csgrid: 3, gpugrid: 1}
+        self.assertEqual(tasks["http://www.gpugrid.net/"], 1)
+        self.assertIn("https://csgrid.org/csg/", {csgrid})
+
 
 class ResultsTest(RPCClientTestCase):
 

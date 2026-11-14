@@ -92,10 +92,12 @@ coverage report
 
 CI fails below 95 %, and every pull request gets a comment with what it changes.
 
-Types are checked with [mypy](https://mypy-lang.org/), which CI also requires to pass:
+The code is linted with [ruff](https://docs.astral.sh/ruff/) and its types are checked with
+[mypy](https://mypy-lang.org/). CI requires both to pass:
 
 ```
-pip install mypy
+pip install ruff mypy
+ruff check .
 mypy
 ```
 

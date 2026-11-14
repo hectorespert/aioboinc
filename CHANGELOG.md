@@ -10,6 +10,9 @@ at its last commit (`f8a31de`, 2022-10-16) plus:
 - **Fixed** `set_run_mode()`, `set_network_mode()` and `set_gpu_mode()`. All three raised `TypeError`
   before sending anything, so none of them could ever have worked. The duration is now sent, so a
   temporary change is temporary.
+- **Fixed** a reply that does not come from a BOINC client going unnoticed when Python runs with
+  `-O`, because the check was an `assert`.
+- **Fixed** `Project` not being usable in a set or as a dictionary key.
 - **Added** `RPCClient.close()`. The connection was never closed, which leaked a socket for every
   client created.
 - Tests run against a fake BOINC client instead of needing a real one on `localhost`, and cover

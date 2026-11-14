@@ -53,14 +53,14 @@ class AuthorizeTest(RPCClientTestCase):
         expected = md5(b"1234.5678secret").hexdigest()
         self.assertEqual(
             self.boinc.requests,
-            ["<auth1/>", "<auth2><nonce_hash>{}</nonce_hash></auth2>".format(expected)],
+            ["<auth1/>", f"<auth2><nonce_hash>{expected}</nonce_hash></auth2>"],
         )
 
     async def test_a_password_given_later_replaces_the_first(self):
         self.assertIs(await self.client.authorize("other"), True)
         expected = md5(b"1234.5678other").hexdigest()
         self.assertEqual(
-            self.boinc.requests[1], "<auth2><nonce_hash>{}</nonce_hash></auth2>".format(expected)
+            self.boinc.requests[1], f"<auth2><nonce_hash>{expected}</nonce_hash></auth2>"
         )
         self.assertEqual(self.client.password, "other")
 

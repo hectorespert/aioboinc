@@ -1,7 +1,9 @@
-from ._tag import Tag
-from xml.etree import ElementTree as ET
+from collections.abc import Callable
 from datetime import datetime, timedelta
-from typing import Any, Callable, Dict, List, Set, Tuple
+from typing import Any
+from xml.etree import ElementTree as ET
+
+from ._tag import Tag
 
 INTEGER_TAG = {
     Tag.MAJOR,
@@ -141,16 +143,24 @@ TIME_TAG = {
     Tag.NEXT_REQUEST_TIME,
 }
 
-TAG_PARSER: Dict[str, Callable[[str], Any]] = {
+TAG_PARSER: dict[str, Callable[[str], Any]] = {
     Tag.BODY: lambda x: x.replace("<![CDATA[", "").replace("]]>", "").strip(),
     Tag.PROJECT_URL: lambda x: Project(master_url=x)
 }
 INTEGER_TAG_PARSER = int
 FLOAT_TAG_PARSER = float
-TIME_TAG_PARSER = lambda x: datetime.fromtimestamp(float(x))
-TIMEDELTA_TAG_PARSER = lambda x: timedelta(seconds=float(x))
+
+
+def TIME_TAG_PARSER(x: str) -> datetime:
+    return datetime.fromtimestamp(float(x))
+
+
+def TIMEDELTA_TAG_PARSER(x: str) -> timedelta:
+    return timedelta(seconds=float(x))
+
+
 BOOL_TAG_PARSER = bool
-_PARSERS: List[Tuple[Callable[[str], Any], Set[str]]] = [
+_PARSERS: list[tuple[Callable[[str], Any], set[str]]] = [
     (INTEGER_TAG_PARSER, INTEGER_TAG),
     (FLOAT_TAG_PARSER, FLOAT_TAG),
     (TIME_TAG_PARSER, TIME_TAG),
@@ -185,8 +195,13 @@ class Project:
     def __eq__(self, other):
         return str(other) == str(self)
 
+    def __hash__(self):
+        # Defining __eq__ alone makes a class unhashable. A project equals its URL, so it hashes
+        # like its URL, and either can look the other up in a set or a dict.
+        return hash(str(self))
+
     def __repr__(self):
-        return "<Project {}, {}>".format(self.master_url, self.__dict__)
+        return f"<Project {self.master_url}, {self.__dict__}>"
 
     def __str__(self):
         return self.master_url

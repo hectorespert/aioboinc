@@ -9,10 +9,9 @@ Note that this client is Async, based on asyncio
 """
 
 import asyncio
-from socket import AF_INET
-from typing import Optional
+import contextlib
 import xml.etree.ElementTree as ET
-
+from socket import AF_INET
 
 GUI_RPC_DEFAULT_PORT = 31416
 REPLY_TAG = "boinc_gui_rpc_reply"
@@ -30,11 +29,13 @@ class _RPCClientRaw:
     def __init__(self, host: str, port=GUI_RPC_DEFAULT_PORT):
         self.host = host
         self.port = port
-        self._reader: Optional[asyncio.StreamReader] = None
-        self._writer: Optional[asyncio.StreamWriter] = None
+        self._reader: asyncio.StreamReader | None = None
+        self._writer: asyncio.StreamWriter | None = None
 
     async def connect(self):
-        self._reader, self._writer = await asyncio.open_connection(self.host, self.port, family=AF_INET, limit=1024*5000)
+        self._reader, self._writer = await asyncio.open_connection(
+            self.host, self.port, family=AF_INET, limit=1024*5000
+        )
 
     async def close(self):
         """
@@ -45,15 +46,13 @@ class _RPCClientRaw:
             return
         writer, self._reader, self._writer = self._writer, None, None
         writer.close()
-        try:
+        # The peer may already be gone; the socket is released either way.
+        with contextlib.suppress(ConnectionError, OSError):
             await writer.wait_closed()
-        except (ConnectionError, OSError):
-            # The peer may already be gone; the socket is released either way.
-            pass
 
     async def _write(self, message: bytes):
         if self._writer is None:
-            raise ConnectionError("Connection to {} was not opened before writing".format(self.host))
+            raise ConnectionError(f"Connection to {self.host} was not opened before writing")
         await self._writer.drain()
         self._writer.write(message + END_OF_MESSAGE)
 
@@ -70,7 +69,7 @@ class _RPCClientRaw:
 
     async def _read(self):
         if self._reader is None:
-            raise ConnectionError("Connection to {} was not opened before writing".format(self.host))
+            raise ConnectionError(f"Connection to {self.host} was not opened before writing")
         return await self._reader.readuntil(separator=END_OF_MESSAGE)
 
     async def receive(self) -> ET.Element:
@@ -85,10 +84,8 @@ class _RPCClientRaw:
         resp = resp[:-1]
         # and parse xml
         resp_e = ET.fromstring(resp)
-        try:
-            assert resp_e.tag == REPLY_TAG
-        except AssertionError:
-            raise ConnectionError("Got invalid response from {}".format(self.host))
+        if resp_e.tag != REPLY_TAG:
+            raise ConnectionError(f"Got invalid response from {self.host}")
         return resp_e[0]
 
     async def request(self, request: ET.Element):

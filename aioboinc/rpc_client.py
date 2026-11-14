@@ -3,13 +3,13 @@ Client making requests to RPC server
 managing authentication etc
 """
 
-from ._raw_client import _RPCClientRaw, GUI_RPC_DEFAULT_PORT
-from ._tag import Tag
-from ._parse import parse_generic, Project
 import xml.etree.ElementTree as ET
-from hashlib import md5
 from enum import Enum
-from typing import List, Dict, Union
+from hashlib import md5
+
+from ._parse import Project, parse_generic
+from ._raw_client import GUI_RPC_DEFAULT_PORT, _RPCClientRaw
+from ._tag import Tag
 
 
 class BOINCClientError(Exception):
@@ -32,7 +32,7 @@ async def init_rpc_client(host: str, password=None, port=GUI_RPC_DEFAULT_PORT):
     return c
 
 
-def _append_project_element(root: ET.Element, project_url: Union[Project, str], name):
+def _append_project_element(root: ET.Element, project_url: Project | str, name):
     url = ET.SubElement(root, Tag.PROJECT_URL)
     url.text = str(project_url)
     name_e = ET.SubElement(root, Tag.NAME)
