@@ -5,10 +5,10 @@
 | Name                      |    Stmts |     Miss |   Branch |   BrPart |   Cover |   Missing |
 |-------------------------- | -------: | -------: | -------: | -------: | ------: | --------: |
 | aioboinc/\_\_init\_\_.py  |        1 |        0 |        0 |        0 |    100% |           |
-| aioboinc/\_parse.py       |       34 |        0 |        8 |        0 |    100% |           |
-| aioboinc/\_raw\_client.py |       54 |        1 |        8 |        1 |     97% |        80 |
+| aioboinc/\_parse.py       |       36 |        0 |        8 |        0 |    100% |           |
+| aioboinc/\_raw\_client.py |       56 |        1 |        8 |        1 |     97% |        82 |
 | aioboinc/rpc\_client.py   |      138 |        0 |       20 |        0 |    100% |           |
-| **TOTAL**                 |  **227** |    **1** |   **36** |    **1** | **99%** |           |
+| **TOTAL**                 |  **231** |    **1** |   **36** |    **1** | **99%** |           |
 
 
 ## Setup coverage badge
