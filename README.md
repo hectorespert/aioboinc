@@ -13,9 +13,8 @@ never published to PyPI. What differs from upstream is listed in the [changelog]
 
 ### Coming from `pyboinc`
 
-The package is now imported as `aioboinc`. `import pyboinc` still works, so existing code runs
-unchanged, but it raises a `DeprecationWarning` and will be removed in a later release. Moving over
-is a rename of the import and nothing else:
+The package is imported as `aioboinc`, not `pyboinc`. Nothing else changed, so moving over is a
+rename of the imports:
 
 ```python
 from aioboinc import init_rpc_client

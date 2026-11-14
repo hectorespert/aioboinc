@@ -36,7 +36,7 @@ Issues = "https://github.com/hectorespert/aioboinc/issues"
 Upstream = "https://github.com/nielstron/pyboinc"
 
 [tool.hatch.build.targets.wheel]
-packages = ["aioboinc", "pyboinc"]
+packages = ["aioboinc"]
 
 [tool.hatch.build.targets.sdist]
-include = ["/aioboinc", "/pyboinc", "/tests", "/example.py", "/CHANGELOG.md"]
+include = ["/aioboinc", "/tests", "/example.py", "/CHANGELOG.md"]
