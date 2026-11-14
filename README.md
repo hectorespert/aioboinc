@@ -9,9 +9,18 @@ It is meant for monitoring and controlling a BOINC client and does not cover the
 It has no dependencies outside the standard library.
 
 This is a maintained fork of [nielstron/pyboinc](https://github.com/nielstron/pyboinc), which was
-never published to PyPI. The distribution is called `aioboinc`; the package you import is still
-`pyboinc`, so code written against the original keeps working. What differs from upstream is listed
-in the [changelog](CHANGELOG.md).
+never published to PyPI. What differs from upstream is listed in the [changelog](CHANGELOG.md).
+
+### Coming from `pyboinc`
+
+The package is now imported as `aioboinc`. `import pyboinc` still works, so existing code runs
+unchanged, but it raises a `DeprecationWarning` and will be removed in a later release. Moving over
+is a rename of the import and nothing else:
+
+```python
+from aioboinc import init_rpc_client
+from aioboinc.rpc_client import Mode
+```
 
 ## Installation
 
@@ -24,8 +33,8 @@ pip install aioboinc
 ```python
 import asyncio
 
-from pyboinc import init_rpc_client
-from pyboinc.rpc_client import Mode
+from aioboinc import init_rpc_client
+from aioboinc.rpc_client import Mode
 
 IP_BOINC = "127.0.0.1"
 PASSWORD_BOINC = "example_password"

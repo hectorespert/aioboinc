@@ -5,6 +5,8 @@
 First release on PyPI, as `aioboinc`. It is [nielstron/pyboinc](https://github.com/nielstron/pyboinc)
 at its last commit (`f8a31de`, 2022-10-16) plus:
 
+- **Renamed** the package from `pyboinc` to `aioboinc`, to match the name it is installed by.
+  `import pyboinc` keeps working as a deprecated alias and warns; change it to `import aioboinc`.
 - **Fixed** `set_run_mode()`, `set_network_mode()` and `set_gpu_mode()`. All three raised `TypeError`
   before sending anything, so none of them could ever have worked. The duration is now sent, so a
   temporary change is temporary.

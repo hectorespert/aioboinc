@@ -9,8 +9,8 @@ import asyncio
 import unittest
 from hashlib import md5
 
-from pyboinc import init_rpc_client
-from pyboinc.rpc_client import BOINCClientError, Mode, RPCClient
+from aioboinc import init_rpc_client
+from aioboinc.rpc_client import BOINCClientError, Mode, RPCClient
 
 from .fixtures import web_state
 

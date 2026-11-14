@@ -39,7 +39,8 @@ jobs:
       - name: Import the built wheel
         run: |
           python -m pip install dist/*.whl
-          cd "$RUNNER_TEMP" && python -c "from pyboinc import init_rpc_client"
+          cd "$RUNNER_TEMP" && python -c "from aioboinc import init_rpc_client"
+          python -W error::DeprecationWarning -c "import aioboinc.rpc_client"
       - uses: actions/upload-artifact@v4
         with:
           name: dist
