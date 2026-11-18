@@ -1,6 +1,6 @@
 name: Publish
 
-# Publishing a GitHub Release tagged vX.Y.Z uploads that version to PyPI.
+# Publishing a GitHub Release tagged X.Y.Z (no "v" prefix) uploads that version to PyPI.
 # Authentication is PyPI Trusted Publishing (OIDC): there is no token to store or rotate.
 on:
   release:
@@ -32,7 +32,7 @@ jobs:
           TAG: ${{ github.event.release.tag_name }}
         run: |
           version="$(sed -n 's/^version = "\(.*\)"$/\1/p' pyproject.toml)"
-          if [ "$TAG" != "v$version" ]; then
+          if [ "$TAG" != "$version" ]; then
             echo "::error::Release tag $TAG does not match pyproject.toml version $version"
             exit 1
           fi
