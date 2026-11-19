@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0
 
 - **Fixed** flags that are `0` in the reply, such as `p_vm_extensions_disabled` or `have_opencl`,
   being read as `True`. Every flag was `True`, whatever its value.
