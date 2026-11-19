@@ -4,6 +4,12 @@
 
 - **Fixed** flags that are `0` in the reply, such as `p_vm_extensions_disabled` or `have_opencl`,
   being read as `True`. Every flag was `True`, whatever its value.
+- **Fixed** `sched_rpc_pending`, `send_time_stats_log` and `send_job_log` being read as flags. They
+  are numbers: `sched_rpc_pending` is the reason a scheduler request is pending.
+- **Fixed** an empty text, such as `team_name`, `ip_addr` or the `project` of a message from the client
+  itself, being read as `True`. It is now `""`. An empty element is still `True` when it is one of
+  the flags the BOINC client sends as `<flag/>`, such as `report_immediately` or
+  `suspended_via_gui`.
 
 ## 0.1.0
 

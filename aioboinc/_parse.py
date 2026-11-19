@@ -55,6 +55,9 @@ INTEGER_TAG = {
     Tag.AMD_SIMD_PER_COMPUTE_UNIT,
     Tag.AMD_SIMD_WIDTH,
     Tag.NUM_RETRIES,
+    Tag.SCHED_RPC_PENDING,
+    Tag.SEND_TIME_STATS_LOG,
+    Tag.SEND_JOB_LOG,
 }
 
 FLOAT_TAG = {
@@ -98,14 +101,64 @@ FLOAT_TAG = {
 BOOL_TAG = {
     Tag.DISALLOW_ATTACH,
     Tag.SIMPLE_GUI_ONLY,
-    Tag.SCHED_RPC_PENDING,
-    Tag.SEND_TIME_STATS_LOG,
-    Tag.SEND_JOB_LOG,
     Tag.P_VM_EXTENSIONS_DISABLED,
     Tag.HAVE_OPENCL,
     Tag.AVAILABLE,
     Tag.ENDIAN_LITTLE,
     Tag.IS_UPLOAD,
+    # The BOINC client sends these as an empty element when they are set, and leaves them out when
+    # they are not.
+    Tag.AMDRT_DETECTED,
+    Tag.ANONYMOUS_PLATFORM,
+    Tag.ATIRT_DETECTED,
+    Tag.ATTACHED_VIA_ACCT_MGR,
+    Tag.COOKIE_REQUIRED,
+    Tag.COPROC_MISSING,
+    Tag.COPY_FILE,
+    Tag.DETACH_WHEN_DONE,
+    Tag.DISALLOWED,
+    Tag.DONT_REQUEST_MORE_WORK,
+    Tag.DONT_THROTTLE,
+    Tag.DONT_USE_DCF,
+    Tag.DOWNLOAD_GZIPPED,
+    Tag.EDF_SCHEDULED,
+    Tag.ENDED,
+    Tag.EXECUTABLE,
+    Tag.GOT_SERVER_ACK,
+    Tag.GZIP_WHEN_DONE,
+    Tag.HAS_CUDA,
+    Tag.HAS_OPENCL,
+    Tag.HAVE_CREDENTIALS,
+    Tag.IS_DEFAULT,
+    Tag.IS_USER_FILE,
+    Tag.IS_WRAPPER,
+    Tag.MAIN_PROGRAM,
+    Tag.MASTER_URL_FETCH_PENDING,
+    Tag.NEEDS_NETWORK,
+    Tag.NEEDS_SHMEM,
+    Tag.NETWORK_WAIT,
+    Tag.NON_CPU_INTENSIVE,
+    Tag.OPTIONAL,
+    Tag.PROJECT_SUSPENDED_VIA_GUI,
+    Tag.READY_TO_REPORT,
+    Tag.REPORT_IMMEDIATELY,
+    Tag.SCHEDULER_RPC_IN_PROGRESS,
+    Tag.SCHEDULER_WAIT,
+    Tag.SEND_FULL_WORKLOAD,
+    Tag.SIGNATURE_REQUIRED,
+    Tag.STICKY,
+    Tag.STRICT_MEMORY_BOUND,
+    Tag.SUSPENDED_VIA_GUI,
+    Tag.SWAP_TOO_LARGE,
+    Tag.TOO_LARGE,
+    Tag.TRICKLE_UP_PENDING,
+    Tag.UPLOADED,
+    Tag.USE_HTTP_AUTH,
+    Tag.USE_HTTP_PROXY,
+    Tag.USE_SOCKS_PROXY,
+    Tag.USE_SYMLINKS,
+    Tag.USE_WSLC,
+    Tag.WANT_NETWORK,
 }
 
 LIST_TAG = {
@@ -187,8 +240,9 @@ def parse_generic(e: ET.Element):
         # set parsed value if available
         return TAG_PARSER.get(e.tag, str)(e.text)
     else:
-        # self closing
-        return True
+        # ElementTree reads <tag/> and <tag></tag> the same, so whether an empty element is a flag
+        # that is set or a text that is empty depends on the tag.
+        return True if e.tag in BOOL_TAG else ""
 
 
 class Project:
