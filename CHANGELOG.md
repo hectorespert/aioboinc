@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **Fixed** flags that are `0` in the reply, such as `p_vm_extensions_disabled` or `have_opencl`,
+  being read as `True`. Every flag was `True`, whatever its value.
+
 ## 0.1.0
 
 First release on PyPI, as `aioboinc`. It is [nielstron/pyboinc](https://github.com/nielstron/pyboinc)

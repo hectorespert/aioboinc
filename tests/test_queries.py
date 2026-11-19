@@ -66,6 +66,11 @@ class HostInfoTest(RPCClientTestCase):
         info = await self.client.get_host_info()
         self.assertIs(info["ip_addr"], True)
 
+    async def test_a_flag_is_false_when_0_and_true_when_1(self):
+        info = await self.client.get_host_info()
+        self.assertIs(info["p_vm_extensions_disabled"], False)
+        self.assertIs(info["coprocs"][0]["have_opencl"], True)
+
 
 class MessageCountTest(RPCClientTestCase):
 
