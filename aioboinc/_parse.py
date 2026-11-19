@@ -159,7 +159,12 @@ def TIMEDELTA_TAG_PARSER(x: str) -> timedelta:
     return timedelta(seconds=float(x))
 
 
-BOOL_TAG_PARSER = bool
+def BOOL_TAG_PARSER(x: str) -> bool:
+    # BOINC writes a flag as 0 or 1, and reads any other number as true too. bool() would make
+    # every non-empty string true, "0" included.
+    return int(x) != 0
+
+
 _PARSERS: list[tuple[Callable[[str], Any], set[str]]] = [
     (INTEGER_TAG_PARSER, INTEGER_TAG),
     (FLOAT_TAG_PARSER, FLOAT_TAG),
