@@ -10,6 +10,9 @@
   itself, being read as `True`. It is now `""`. An empty element is still `True` when it is one of
   the flags the BOINC client sends as `<flag/>`, such as `report_immediately` or
   `suspended_via_gui`.
+- **Changed** an empty list, such as `get_results()` with no tasks or `get_file_transfers()` with no
+  transfers, to be `[]`. It was the string `"\n"`, or `""` when the client sent it as `<results/>`.
+  Code that checks for `"\n"` or `isinstance(..., list)` before using the list no longer needs to.
 
 ## 0.1.0
 

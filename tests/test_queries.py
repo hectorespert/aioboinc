@@ -45,9 +45,8 @@ class FileTransfersTest(RPCClientTestCase):
 
     replies = (web_state.file_transfers,)
 
-    async def test_no_transfers_is_a_newline_not_an_empty_list(self):
-        # Not what anyone would design, but it is what callers have had to handle so far.
-        self.assertEqual(await self.client.get_file_transfers(), "\n")
+    async def test_no_transfers_is_an_empty_list(self):
+        self.assertEqual(await self.client.get_file_transfers(), [])
         self.assertEqual(self.boinc.requests, ["<get_file_transfers/>"])
 
 
@@ -175,6 +174,13 @@ class NoResultsTest(RPCClientTestCase):
 
     replies = (NO_RESULTS,)
 
-    async def test_no_tasks_is_a_newline_not_an_empty_list(self):
-        # Callers depend on this, so changing it has to be a decision rather than an accident.
-        self.assertEqual(await self.client.get_results(), "\n")
+    async def test_no_tasks_is_an_empty_list(self):
+        self.assertEqual(await self.client.get_results(), [])
+
+
+class NoResultsSelfClosingTest(RPCClientTestCase):
+
+    replies = ("<boinc_gui_rpc_reply><results/></boinc_gui_rpc_reply>",)
+
+    async def test_no_tasks_is_an_empty_list(self):
+        self.assertEqual(await self.client.get_results(), [])

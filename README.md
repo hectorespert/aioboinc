@@ -55,12 +55,12 @@ async def main():
         c = await rpc_client.get_message_count()
         print(await rpc_client.get_messages(c - 3))
 
-        # Get the tasks. With no tasks this is the string "\n" rather than an empty list.
+        # Get the tasks
         results = await rpc_client.get_results()
         print(results)
 
         # Suspend a task and resume it
-        if isinstance(results, list) and results:
+        if results:
             task = (results[0]["project_url"], results[0]["name"])
             print(await rpc_client.suspend_result(*task))
             print(await rpc_client.resume_result(*task))
