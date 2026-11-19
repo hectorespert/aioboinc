@@ -62,9 +62,9 @@ class HostInfoTest(RPCClientTestCase):
         self.assertEqual(info["p_ncpus"], 4)
         self.assertEqual(info["p_vendor"], "AuthenticAMD")
 
-    async def test_an_empty_element_is_true(self):
+    async def test_an_empty_text_is_an_empty_string(self):
         info = await self.client.get_host_info()
-        self.assertIs(info["ip_addr"], True)
+        self.assertEqual(info["ip_addr"], "")
 
     async def test_a_flag_is_false_when_0_and_true_when_1(self):
         info = await self.client.get_host_info()
@@ -97,6 +97,10 @@ class MessagesTest(RPCClientTestCase):
         )
         self.assertEqual(first["time"], datetime.fromtimestamp(1586722353))
 
+    async def test_a_message_from_the_client_itself_has_no_project(self):
+        messages = await self.client.get_messages()
+        self.assertEqual(messages[0]["project"], "")
+
     async def test_asks_from_a_sequence_number_and_for_translatable_text(self):
         await self.client.get_messages(44, translatable=True)
         self.assertEqual(
@@ -115,6 +119,10 @@ class ProjectStatusTest(RPCClientTestCase):
             [str(p) for p in projects], ["https://csgrid.org/csg/", "http://www.gpugrid.net/"]
         )
         self.assertEqual(projects[0].project_name, "Citizen Science Grid")
+
+    async def test_a_flag_sent_as_an_empty_element_is_true(self):
+        project = (await self.client.get_project_status())[0]
+        self.assertIs(project.dont_use_dcf, True)
 
     async def test_counters_that_look_like_flags_are_numbers(self):
         project = (await self.client.get_project_status())[0]
@@ -152,6 +160,11 @@ class ResultsTest(RPCClientTestCase):
         self.assertEqual(task["version_num"], 210)
         self.assertEqual(task["project_url"], "http://www.gpugrid.net/")
         self.assertIsInstance(task["project_url"], Project)
+
+    async def test_a_flag_is_true_when_present_and_missing_when_not(self):
+        task = (await self.client.get_results())[0]
+        self.assertIs(task["report_immediately"], True)
+        self.assertNotIn("ready_to_report", task)
 
     async def test_can_ask_for_active_tasks_only(self):
         await self.client.get_results(active_only=True)
