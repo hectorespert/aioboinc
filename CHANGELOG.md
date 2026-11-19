@@ -4,6 +4,8 @@
 
 - **Fixed** flags that are `0` in the reply, such as `p_vm_extensions_disabled` or `have_opencl`,
   being read as `True`. Every flag was `True`, whatever its value.
+- **Fixed** `sched_rpc_pending`, `send_time_stats_log` and `send_job_log` being read as flags. They
+  are numbers: `sched_rpc_pending` is the reason a scheduler request is pending.
 
 ## 0.1.0
 

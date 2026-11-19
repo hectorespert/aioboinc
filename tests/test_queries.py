@@ -116,6 +116,14 @@ class ProjectStatusTest(RPCClientTestCase):
         )
         self.assertEqual(projects[0].project_name, "Citizen Science Grid")
 
+    async def test_counters_that_look_like_flags_are_numbers(self):
+        project = (await self.client.get_project_status())[0]
+        # The BOINC client sends the reason for a pending scheduler request, not just whether there
+        # is one, so 0 has to stay a number rather than become False.
+        for counter in ("sched_rpc_pending", "send_time_stats_log", "send_job_log"):
+            with self.subTest(counter):
+                self.assertIs(type(getattr(project, counter)), int)
+
     async def test_a_project_compares_equal_to_its_url(self):
         project = (await self.client.get_project_status())[0]
         self.assertEqual(project, "https://csgrid.org/csg/")
