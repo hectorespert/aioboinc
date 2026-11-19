@@ -230,12 +230,13 @@ for parser_func, tags in _PARSERS:
 
 
 def parse_generic(e: ET.Element):
-    if len(e) > 0:
-        if e.tag in LIST_TAG:
-            return [parse_generic(cc) for cc in e]
-        else:
-            # recurse on elements with children
-            return dict((c.tag, parse_generic(c)) for c in e)
+    if e.tag in LIST_TAG:
+        # Checked first, so that an empty list is [], whether it comes as <results/> or with the
+        # newline between its tags.
+        return [parse_generic(cc) for cc in e]
+    elif len(e) > 0:
+        # recurse on elements with children
+        return dict((c.tag, parse_generic(c)) for c in e)
     elif e.text is not None:
         # set parsed value if available
         return TAG_PARSER.get(e.tag, str)(e.text)
