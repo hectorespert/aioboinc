@@ -5,6 +5,15 @@
 - **Fixed** requests made at once on the same client, for example with `asyncio.gather()`, failing
   with `RuntimeError: readuntil() called while another coroutine is already waiting`. They now wait
   for their turn, and `authorize()` keeps its two steps together so no request takes their replies.
+- **Added** a timeout, 30 seconds by default, to connect and to get each reply. Past it,
+  `TimeoutError` is raised instead of waiting forever. Set it with `init_rpc_client(..., timeout=)`,
+  or turn it off with `timeout=None`.
+- **Fixed** a request that times out, is cancelled or fails before its reply arrives leaving that
+  reply to be read by the next request as its own. The connection is now dropped instead, and
+  `connected` becomes `False`: call `connect()` and `authorize()` again to go on.
+- **Changed** `RPCClient.connected` to a read-only property that tells whether there is a
+  connection. It stayed `True` after the connection was lost, so `connect()` did not open a new one,
+  including when the BOINC client had hung up or the connection had been reset.
 
 ## 0.2.0
 

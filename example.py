@@ -8,6 +8,8 @@ PASSWORD_BOINC = "example_password"
 
 
 async def main():
+    # Connecting, and every request, raise TimeoutError after 30 seconds without an answer.
+    # Pass timeout= to change it, or timeout=None to wait forever.
     rpc_client = await init_rpc_client(IP_BOINC, PASSWORD_BOINC)
     try:
         # Connecting does not authenticate. Do it before anything else and check the answer:
