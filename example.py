@@ -1,6 +1,6 @@
 import asyncio
 
-from aioboinc import init_rpc_client
+from aioboinc import BOINCAuthError, init_rpc_client
 from aioboinc.rpc_client import Mode
 
 IP_BOINC = "127.0.0.1"
@@ -8,14 +8,17 @@ PASSWORD_BOINC = "example_password"
 
 
 async def main():
-    # Connecting, and every request, raise TimeoutError after 30 seconds without an answer.
-    # Pass timeout= to change it, or timeout=None to wait forever.
+    # Every error is a BOINCClientError. A host that cannot be reached, or that stops answering,
+    # raises BOINCConnectionError; one that takes more than 30 seconds to answer, its subclass
+    # BOINCTimeoutError. Pass timeout= to change it, or timeout=None to wait forever.
     rpc_client = await init_rpc_client(IP_BOINC, PASSWORD_BOINC)
     try:
-        # Connecting does not authenticate. Do it before anything else and check the answer:
-        # without it BOINC refuses to change anything and gives incomplete answers to queries.
-        if not await rpc_client.authorize():
-            raise SystemExit("Wrong password")
+        # Connecting does not authenticate. Do it before anything else: without it BOINC refuses
+        # to change anything, and to answer queries from another host, with BOINCAuthError.
+        try:
+            await rpc_client.authorize()
+        except BOINCAuthError:
+            raise SystemExit("Wrong password") from None
 
         print(await rpc_client.get_cc_status())
         print(await rpc_client.get_project_status())

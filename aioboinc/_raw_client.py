@@ -13,6 +13,8 @@ import contextlib
 import xml.etree.ElementTree as ET
 from socket import AF_INET
 
+from .exceptions import BOINCClientError, BOINCConnectionError, BOINCTimeoutError
+
 GUI_RPC_DEFAULT_PORT = 31416
 # Seconds to connect, or to get the reply to a request, before giving up
 DEFAULT_TIMEOUT = 30.0
@@ -55,9 +57,11 @@ class _RPCClientRaw:
                 self.timeout,
             )
         except TimeoutError:
-            raise TimeoutError(
+            raise BOINCTimeoutError(
                 f"Could not connect to {self.host} within {self.timeout} seconds"
             ) from None
+        except OSError as err:
+            raise BOINCConnectionError(f"Could not connect to {self.host}: {err}") from err
 
     async def close(self):
         """
@@ -82,7 +86,7 @@ class _RPCClientRaw:
 
     async def _write(self, message: bytes):
         if self._writer is None:
-            raise ConnectionError(f"Connection to {self.host} was not opened before writing")
+            raise BOINCConnectionError(f"Connection to {self.host} was not opened before writing")
         await self._writer.drain()
         self._writer.write(message + END_OF_MESSAGE)
 
@@ -99,7 +103,7 @@ class _RPCClientRaw:
 
     async def _read(self):
         if self._reader is None:
-            raise ConnectionError(f"Connection to {self.host} was not opened before writing")
+            raise BOINCConnectionError(f"Connection to {self.host} was not opened before reading")
         return await self._reader.readuntil(separator=END_OF_MESSAGE)
 
     async def receive(self) -> ET.Element:
@@ -114,24 +118,37 @@ class _RPCClientRaw:
         resp = resp[:-1]
         # and parse xml
         resp_e = ET.fromstring(resp)
-        if resp_e.tag != REPLY_TAG:
-            raise ConnectionError(f"Got invalid response from {self.host}")
+        if resp_e.tag != REPLY_TAG or len(resp_e) == 0:
+            raise BOINCConnectionError(f"Got an invalid reply from {self.host}")
         return resp_e[0]
 
     async def request(self, request: ET.Element):
         """
         Send request to server and return reply
-        Raises TimeoutError if the reply takes longer than the timeout. If the exchange does not
-        finish, for that or any other reason, the connection is dropped: the reply may still be on
-        its way, and the next request would read it as its own.
+        Raises BOINCTimeoutError if the reply takes longer than the timeout, and
+        BOINCConnectionError if the connection is lost or the reply is not one. If the exchange does
+        not finish, for those or any other reason, the connection is dropped: the reply may still be
+        on its way, and the next request would read it as its own.
         """
         try:
             return await asyncio.wait_for(self._exchange(request), self.timeout)
         except TimeoutError:
             self._abort()
-            raise TimeoutError(
+            raise BOINCTimeoutError(
                 f"{self.host} did not reply within {self.timeout} seconds"
             ) from None
+        except BOINCClientError:
+            self._abort()
+            raise
+        except EOFError as err:
+            self._abort()
+            raise BOINCConnectionError(f"{self.host} closed the connection") from err
+        except (ET.ParseError, asyncio.LimitOverrunError) as err:
+            self._abort()
+            raise BOINCConnectionError(f"Got an invalid reply from {self.host}") from err
+        except OSError as err:
+            self._abort()
+            raise BOINCConnectionError(f"Lost the connection to {self.host}: {err}") from err
         except BaseException:
             self._abort()
             raise

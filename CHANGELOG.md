@@ -4,6 +4,27 @@
 
 - **Changed** the minimum Python version to 3.11. Python 3.10 reached its end of life in October
   2026, and Home Assistant needs 3.13 or later.
+- **Added** exceptions of its own, importable from `aioboinc`, so that callers can tell a wrong
+  password from a host that is down. Every one of them is a `BOINCClientError`:
+  - `BOINCAuthError`: the password is wrong or missing, or the request needs `authorize()` first.
+  - `BOINCConnectionError`: the host could not be reached, the connection was lost, or what
+    answered is not a BOINC client. It is also a `ConnectionError`.
+  - `BOINCTimeoutError`: the host did not answer in time. It is also a `BOINCConnectionError` and
+    a `TimeoutError`, so code that catches `TimeoutError` still catches it.
+- **Changed** `authorize()` to raise `BOINCAuthError` when the password is wrong or there is none.
+  It returned `False`. It still returns `True` when it succeeds. After a wrong password BOINC hangs
+  up, so the connection is dropped: `connect()` again before trying another password.
+- **Changed** a request that BOINC refuses for want of `authorize()` to raise `BOINCAuthError`.
+  Control requests returned `False`, and queries returned an empty answer, such as `[]` from
+  `get_project_status()`, as if there were nothing to show.
+- **Changed** the errors from the connection to `BOINCConnectionError`, and the connection is
+  dropped on all of them. A refused connection or an unknown host raised `OSError` subclasses such
+  as `ConnectionRefusedError` or `socket.gaierror`, which are now its `__cause__`; code that
+  catches `OSError` or `ConnectionError` still catches them. A host that hung up before replying
+  raised `asyncio.IncompleteReadError`, and a reply that was not XML raised
+  `xml.etree.ElementTree.ParseError`.
+- **Fixed** an error, or anything other than a nonce, in reply to the first step of `authorize()`
+  raising `TypeError`, and an empty reply raising `IndexError`.
 
 ## 0.3.0
 
