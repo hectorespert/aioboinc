@@ -9,7 +9,7 @@ from enum import Enum
 from hashlib import md5
 
 from ._parse import Project, parse_generic
-from ._raw_client import GUI_RPC_DEFAULT_PORT, _RPCClientRaw
+from ._raw_client import DEFAULT_TIMEOUT, GUI_RPC_DEFAULT_PORT, _RPCClientRaw
 from ._tag import Tag
 
 
@@ -24,11 +24,15 @@ class Mode(Enum):
     RESTORE = Tag.RESTORE
 
 
-async def init_rpc_client(host: str, password=None, port=GUI_RPC_DEFAULT_PORT):
+async def init_rpc_client(
+    host: str, password=None, port=GUI_RPC_DEFAULT_PORT, timeout: float | None = DEFAULT_TIMEOUT
+):
     """
     Creates RPC Client and initiates connection to RPC Server
+    timeout is the seconds to connect, and to get each reply, before raising TimeoutError.
+    None waits forever.
     """
-    c = RPCClient(host, password, port)
+    c = RPCClient(host, password, port, timeout)
     await c.connect()
     return c
 
@@ -45,21 +49,31 @@ class RPCClient:
     For the content and structure of returned dicts refer to https://boinc.berkeley.edu/trac/wiki/GuiRpcProtocol#RequestsandReplies
     """
 
-    def __init__(self, host: str, password=None, port=GUI_RPC_DEFAULT_PORT):
+    def __init__(
+        self, host: str, password=None, port=GUI_RPC_DEFAULT_PORT,
+        timeout: float | None = DEFAULT_TIMEOUT,
+    ):
         """
         Should not be called directly, use init_rpc_client
         """
-        self._raw_client = _RPCClientRaw(host, port)
+        self._raw_client = _RPCClientRaw(host, port, timeout)
         # One connection carries one exchange at a time: a reply has no id to match it to its
         # request, so requests made at once wait for their turn.
         self._lock = asyncio.Lock()
         self.password = password
-        self.connected = False
+
+    @property
+    def connected(self) -> bool:
+        """
+        Whether there is a connection to the RPC server
+        It is lost by closing it, and by a request that times out, is cancelled or fails on the
+        way: connect() again to go on.
+        """
+        return self._raw_client.connected
 
     async def connect(self):
         if not self.connected:
             await self._raw_client.connect()
-            self.connected = True
 
     async def close(self):
         """
@@ -67,7 +81,6 @@ class RPCClient:
         The client can be connected again afterwards
         """
         await self._raw_client.close()
-        self.connected = False
 
     async def authorize(self, password=None):
         """

@@ -9,7 +9,7 @@ from unittest import mock
 
 from aioboinc.rpc_client import BOINCClientError, Mode, RPCClient
 
-from .fake_boinc import RPCClientTestCase
+from .fake_boinc import NO_REPLY, Late, RPCClientTestCase
 from .fixtures import web_state
 
 
@@ -180,6 +180,77 @@ class InvalidReplyTest(RPCClientTestCase):
     async def test_a_reply_without_the_envelope_raises(self):
         with self.assertRaisesRegex(ConnectionError, "invalid response"):
             await self.client.get_cc_status()
+        # Whatever answered is not a BOINC client, so there is no point in going on talking to it
+        self.assertFalse(self.client.connected)
+
+
+class TimeoutTest(RPCClientTestCase):
+
+    timeout = 0.1
+    replies = (Late(web_state.seqno, 0.5), web_state.cc_status)
+
+    async def test_a_late_reply_raises_timeout_error(self):
+        with self.assertRaisesRegex(TimeoutError, "127.0.0.1 did not reply within 0.1 seconds"):
+            await self.client.get_message_count()
+        self.assertFalse(self.client.connected)
+
+    async def test_the_next_request_does_not_take_the_late_reply(self):
+        with self.assertRaises(TimeoutError):
+            await self.client.get_message_count()
+        with self.assertRaises(ConnectionError):
+            await self.client.get_cc_status()
+        await self.client.connect()
+        status = await self.client.get_cc_status()
+        self.assertEqual(status["task_mode"], 2)
+
+
+class AuthorizeTimeoutTest(RPCClientTestCase):
+
+    timeout = 0.1
+    replies = (NO_REPLY,)
+
+    async def test_authorize_times_out_too(self):
+        with self.assertRaises(TimeoutError):
+            await self.client.authorize()
+        self.assertFalse(self.client.connected)
+
+
+class NoTimeoutTest(RPCClientTestCase):
+
+    timeout = None
+    replies = (Late(web_state.seqno, 0.2),)
+
+    async def test_none_waits_for_the_reply(self):
+        self.assertEqual(await self.client.get_message_count(), 47)
+
+
+class CancelTest(RPCClientTestCase):
+
+    replies = (NO_REPLY,)
+
+    async def test_a_request_cancelled_while_waiting_for_its_reply_drops_the_connection(self):
+        request = asyncio.create_task(self.client.get_message_count())
+        await asyncio.wait_for(self.boinc.received.wait(), timeout=5)
+        request.cancel()
+        with self.assertRaises(asyncio.CancelledError):
+            await request
+        self.assertFalse(self.client.connected)
+        await asyncio.wait_for(self.boinc.disconnected.wait(), timeout=5)
+
+
+class ConnectTimeoutTest(unittest.IsolatedAsyncioTestCase):
+
+    async def test_a_host_that_does_not_answer_raises_timeout_error(self):
+        async def never_connects(*args, **kwargs):
+            await asyncio.Event().wait()
+
+        client = RPCClient("192.0.2.1", timeout=0.1)
+        with (
+            mock.patch("asyncio.open_connection", never_connects),
+            self.assertRaisesRegex(TimeoutError, "connect to 192.0.2.1 within 0.1 seconds"),
+        ):
+            await client.connect()
+        self.assertFalse(client.connected)
 
 
 class ConnectTest(RPCClientTestCase):
