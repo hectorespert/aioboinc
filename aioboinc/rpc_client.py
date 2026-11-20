@@ -83,10 +83,10 @@ class RPCClient:
     Each method sends one request and waits for its reply. Requests made at once, for example with
     asyncio.gather(), wait for their turn. A reply is parsed into dicts and lists keyed by the
     names of its XML elements, and the type of each value depends on its element: numbers become
-    int or float, flags bool, times naive datetime in local time, the CPU and elapsed times of a
-    task timedelta, and empty texts "". Other durations, such as the *_mode_delay of
-    get_cc_status(), are float seconds. An element the parser does not know stays a str. For what
-    each reply holds, see
+    int or float, flags bool, times datetime in UTC, the CPU and elapsed times of a task
+    timedelta, and empty texts "". Other durations, such as the *_mode_delay of get_cc_status(),
+    are float seconds. An element the parser does not know stays a str. For what each reply holds,
+    see
     https://boinc.berkeley.edu/trac/wiki/GuiRpcProtocol#RequestsandReplies
 
     The queries need authorize() first only when the client is on another host. The requests

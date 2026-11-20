@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- **Changed** times, such as the `time` of a message or the `report_deadline` of a task, to be
+  aware `datetime` in UTC. They were naive, in the time zone of the host running this client, which
+  need not be the one BOINC runs on, and could not be compared with an aware `datetime` such as
+  `datetime.now(UTC)` without a `TypeError`. They name the same instant: convert them with
+  `astimezone()` to show them in local time.
+
 ## 0.5.0
 
 - **Fixed** `get_disk_usage()` leaving out the totals of the disk. It returned only the usage of
