@@ -54,7 +54,7 @@ class _RPCClientRaw:
                 asyncio.open_connection(self.host, self.port, family=AF_INET, limit=1024*5000),
                 self.timeout,
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise TimeoutError(
                 f"Could not connect to {self.host} within {self.timeout} seconds"
             ) from None
@@ -127,7 +127,7 @@ class _RPCClientRaw:
         """
         try:
             return await asyncio.wait_for(self._exchange(request), self.timeout)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             self._abort()
             raise TimeoutError(
                 f"{self.host} did not reply within {self.timeout} seconds"
