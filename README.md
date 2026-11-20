@@ -89,6 +89,9 @@ asyncio.run(main())
 afterwards; `None` waits forever. `password` is the one in `gui_rpc_auth.cfg`, in the BOINC data
 directory.
 
+BOINC listens on IPv4 only, so `host` is a name, resolved to its IPv4 addresses, or an IPv4
+address. An IPv6 address raises `BOINCConnectionError`.
+
 To manage the connection:
 
 | Method | Does |
