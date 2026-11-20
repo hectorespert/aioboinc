@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- **Fixed** `get_disk_usage()` leaving out the totals of the disk. It returned only the usage of
+  each project, under `project`; it now returns `d_total`, `d_free`, `d_boinc` and `d_allowed`
+  next to it, in bytes.
+
 ## 0.4.0
 
 - **Changed** the minimum Python version to 3.11. Python 3.10 reached its end of life in October

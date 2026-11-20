@@ -7,6 +7,7 @@ import asyncio
 import xml.etree.ElementTree as ET
 from enum import Enum
 from hashlib import md5
+from typing import Any
 
 from ._parse import Project, parse_generic
 from ._raw_client import DEFAULT_TIMEOUT, GUI_RPC_DEFAULT_PORT, _RPCClientRaw
@@ -164,12 +165,14 @@ class RPCClient:
     async def get_disk_usage(self):
         req = ET.Element(Tag.GET_DISK_USAGE)
         rep = await self._request(req)
-        res = {Tag.PROJECT: []}
+        # The projects come as repeated <project> elements, which a dict keeps only the last of,
+        # so they are gathered in a list. The totals of the disk follow them.
+        res: dict[str, Any] = {Tag.PROJECT: []}
         for c in rep:
             if c.tag == Tag.PROJECT:
                 res[Tag.PROJECT].append(parse_generic(c))
             else:
-                parse_generic(c)
+                res[c.tag] = parse_generic(c)
         return res
 
     async def get_file_transfers(self):
