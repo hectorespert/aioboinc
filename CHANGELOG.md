@@ -36,6 +36,8 @@
 - **Fixed** the system giving up on a connection, with `[Errno 110] Connection timed out`, being
   reported as the timeout of the client running out, even with `timeout=None`. It raises
   `BOINCConnectionError`, with the system's error as its `__cause__`.
+- **Added** the `py.typed` marker, so that type checkers such as mypy read the annotations of the
+  package instead of treating everything it exports as `Any`.
 
 ## 0.3.0
 
