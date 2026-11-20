@@ -51,15 +51,19 @@ class _RPCClientRaw:
     async def connect(self):
         # Let go of a connection the host hung up on before opening another
         self._abort()
+        deadline = asyncio.timeout(self.timeout)
         try:
-            self._reader, self._writer = await asyncio.wait_for(
-                asyncio.open_connection(self.host, self.port, family=AF_INET, limit=1024*5000),
-                self.timeout,
-            )
-        except TimeoutError:
-            raise BOINCTimeoutError(
-                f"Could not connect to {self.host} within {self.timeout} seconds"
-            ) from None
+            async with deadline:
+                self._reader, self._writer = await asyncio.open_connection(
+                    self.host, self.port, family=AF_INET, limit=1024*5000
+                )
+        except TimeoutError as err:
+            if deadline.expired():
+                raise BOINCTimeoutError(
+                    f"Could not connect to {self.host} within {self.timeout} seconds"
+                ) from None
+            # The system gave up on the connection, which is an OSError like any other
+            raise BOINCConnectionError(f"Could not connect to {self.host}: {err}") from err
         except OSError as err:
             raise BOINCConnectionError(f"Could not connect to {self.host}: {err}") from err
 
@@ -127,17 +131,22 @@ class _RPCClientRaw:
         Send request to server and return reply
         Raises BOINCTimeoutError if the reply takes longer than the timeout, and
         BOINCConnectionError if the connection is lost, or its subclass BOINCProtocolError if the
-        reply is not one. If the exchange does
-        not finish, for those or any other reason, the connection is dropped: the reply may still be
-        on its way, and the next request would read it as its own.
+        reply is not one. If the exchange does not finish, for those or any other reason, the
+        connection is dropped: the reply may still be on its way, and the next request would read it
+        as its own.
         """
+        deadline = asyncio.timeout(self.timeout)
         try:
-            return await asyncio.wait_for(self._exchange(request), self.timeout)
-        except TimeoutError:
+            async with deadline:
+                return await self._exchange(request)
+        except TimeoutError as err:
             self._abort()
-            raise BOINCTimeoutError(
-                f"{self.host} did not reply within {self.timeout} seconds"
-            ) from None
+            if deadline.expired():
+                raise BOINCTimeoutError(
+                    f"{self.host} did not reply within {self.timeout} seconds"
+                ) from None
+            # The system gave up on the connection, which is an OSError like any other
+            raise BOINCConnectionError(f"Lost the connection to {self.host}: {err}") from err
         except BOINCError:
             self._abort()
             raise

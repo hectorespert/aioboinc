@@ -12,8 +12,8 @@
     `ConnectionError`.
   - `BOINCTimeoutError`: the host did not answer in time. It is also a `BOINCConnectionError` and
     a `TimeoutError`, so code that catches `TimeoutError` still catches it.
-  - `BOINCProtocolError`: what answered is not a BOINC client, or its reply is not the one
-    expected. It is also a `BOINCConnectionError`.
+  - `BOINCProtocolError`: what answered is not a BOINC client: its reply is not XML, is empty, or
+    is not the one `authorize()` expects. It is also a `BOINCConnectionError`.
 - **Changed** the base `BOINCClientError` to be called `BOINCError`. The old name is kept as an
   alias, so code that catches it still does, and now catches the other errors too.
 - **Changed** `authorize()` to raise `BOINCAuthError` when the password is wrong or there is none.
@@ -33,6 +33,9 @@
 - **Fixed** an error, or anything other than a nonce, in reply to the first step of `authorize()`
   raising `TypeError`. It raises `BOINCCommandError` or `BOINCProtocolError`.
 - **Fixed** an empty reply raising `IndexError`. It raises `BOINCProtocolError`.
+- **Fixed** the system giving up on a connection, with `[Errno 110] Connection timed out`, being
+  reported as the timeout of the client running out, even with `timeout=None`. It raises
+  `BOINCConnectionError`, with the system's error as its `__cause__`.
 
 ## 0.3.0
 

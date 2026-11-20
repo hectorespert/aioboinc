@@ -3,6 +3,7 @@ Tests for connecting, authorizing, changing modes and closing
 """
 
 import asyncio
+import errno
 import socket
 import unittest
 from hashlib import md5
@@ -393,6 +394,44 @@ class ConnectTimeoutTest(unittest.IsolatedAsyncioTestCase):
         ):
             await client.connect()
         self.assertFalse(client.connected)
+
+
+class SystemTimeoutTest(unittest.IsolatedAsyncioTestCase):
+    """
+    The system giving up on a connection raises a TimeoutError too, which is not the client's
+    timeout running out
+    """
+
+    async def test_connecting_raises_connection_error(self):
+        async def system_gives_up(*args, **kwargs):
+            raise OSError(errno.ETIMEDOUT, "Connection timed out")
+
+        client = RPCClient("192.0.2.1", timeout=None)
+        with (
+            mock.patch("asyncio.open_connection", system_gives_up),
+            self.assertRaisesRegex(BOINCConnectionError, "Could not connect to 192.0.2.1") as caught,
+        ):
+            await client.connect()
+        self.assertNotIsInstance(caught.exception, BOINCTimeoutError)
+        self.assertEqual(caught.exception.__cause__.errno, errno.ETIMEDOUT)
+
+
+class SystemTimeoutOnRequestTest(RPCClientTestCase):
+
+    timeout = None
+
+    async def test_a_request_raises_connection_error(self):
+        async def system_gives_up(request):
+            raise OSError(errno.ETIMEDOUT, "Connection timed out")
+
+        with (
+            mock.patch.object(self.client._raw_client, "_exchange", system_gives_up),
+            self.assertRaisesRegex(BOINCConnectionError, "Lost the connection to 127.0.0.1") as caught,
+        ):
+            await self.client.get_cc_status()
+        self.assertNotIsInstance(caught.exception, BOINCTimeoutError)
+        self.assertEqual(caught.exception.__cause__.errno, errno.ETIMEDOUT)
+        self.assertFalse(self.client.connected)
 
 
 class ConnectRefusedTest(unittest.IsolatedAsyncioTestCase):

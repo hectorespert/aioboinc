@@ -44,5 +44,5 @@ class BOINCTimeoutError(BOINCConnectionError, TimeoutError):
 class BOINCProtocolError(BOINCConnectionError):
     """
     What answered does not speak the GUI RPC protocol as a BOINC client does: the reply is not XML,
-    is empty, or is not the one expected
+    is empty, or is not the one authorize() expects
     """
