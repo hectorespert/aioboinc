@@ -1,6 +1,9 @@
 """
-Client making requests to RPC server
-managing authentication etc
+Client for the GUI RPC protocol of a BOINC client
+
+init_rpc_client() connects one. Its methods make the requests, authorize() among them, and wait
+for their replies. For what a reply holds, see
+https://boinc.berkeley.edu/trac/wiki/GuiRpcProtocol#RequestsandReplies
 """
 
 import asyncio
@@ -18,6 +21,18 @@ __all__ = ["BOINCClientError", "Mode", "RPCClient", "init_rpc_client"]
 
 
 class Mode(Enum):
+    """
+    When BOINC may compute, use the GPU or use the network, for set_run_mode(), set_gpu_mode()
+    and set_network_mode()
+
+    Attributes:
+        ALWAYS: Always, whatever the preferences say.
+        NEVER: Never.
+        AUTO: When the preferences allow it.
+        RESTORE: End a temporary mode early and go back to the permanent one. Without a temporary
+            mode, go back to the mode before the last change. The duration is ignored.
+    """
+
     ALWAYS = Tag.ALWAYS
     NEVER = Tag.NEVER
     AUTO = Tag.AUTO
@@ -30,9 +45,24 @@ async def init_rpc_client(
     host: str, password=None, port=GUI_RPC_DEFAULT_PORT, timeout: float | None = DEFAULT_TIMEOUT,  # noqa: ASYNC109
 ):
     """
-    Creates RPC Client and initiates connection to RPC Server
-    timeout is the seconds to connect, and to get each reply, before raising BOINCTimeoutError.
-    None waits forever.
+    Create a client and connect it to a BOINC client
+
+    Connecting does not authorize: call authorize() next.
+
+    Args:
+        host: Name or IPv4 address of the host the BOINC client runs on.
+        password: The GUI RPC password, from gui_rpc_auth.cfg in the BOINC data directory.
+            authorize() uses it unless it is given another.
+        port: Port the BOINC client listens on.
+        timeout: Seconds to connect, and to get each reply afterwards, before raising
+            BOINCTimeoutError. None waits forever.
+
+    Returns:
+        The connected RPCClient.
+
+    Raises:
+        BOINCConnectionError: The host could not be reached.
+        BOINCTimeoutError: The host did not accept the connection in time.
     """
     c = RPCClient(host, password, port, timeout)
     await c.connect()
@@ -48,7 +78,30 @@ def _append_project_element(root: ET.Element, project_url: Project | str, name):
 
 class RPCClient:
     """
-    For the content and structure of returned dicts refer to https://boinc.berkeley.edu/trac/wiki/GuiRpcProtocol#RequestsandReplies
+    Client for the GUI RPC protocol of a BOINC client, made by init_rpc_client()
+
+    Each method sends one request and waits for its reply. Requests made at once, for example with
+    asyncio.gather(), wait for their turn. A reply is parsed into dicts and lists keyed by the
+    names of its XML elements, and the type of each value depends on its element: numbers become
+    int or float, flags bool, times naive datetime in local time, the CPU and elapsed times of a
+    task timedelta, and empty texts "". Other durations, such as the *_mode_delay of
+    get_cc_status(), are float seconds. An element the parser does not know stays a str. For what
+    each reply holds, see
+    https://boinc.berkeley.edu/trac/wiki/GuiRpcProtocol#RequestsandReplies
+
+    The queries need authorize() first only when the client is on another host. The requests
+    that change something always do.
+
+    Every request raises:
+        BOINCAuthError: The request needs authorize() first. The connection is kept.
+        BOINCCommandError: BOINC answered with an error, such as "no such result". The connection
+            is kept, except in authorize().
+        BOINCConnectionError: The connection could not be used or was lost, or the reply was not
+            one (BOINCProtocolError) or did not come in time (BOINCTimeoutError). The connection
+            is dropped: connect() and authorize() again to go on.
+
+    Attributes:
+        password: The password authorize() uses when it is given none.
     """
 
     def __init__(
@@ -56,7 +109,7 @@ class RPCClient:
         timeout: float | None = DEFAULT_TIMEOUT,
     ):
         """
-        Should not be called directly, use init_rpc_client
+        Should not be called directly, use init_rpc_client()
         """
         self._raw_client = _RPCClientRaw(host, port, timeout)
         # One connection carries one exchange at a time: a reply has no id to match it to its
@@ -67,30 +120,56 @@ class RPCClient:
     @property
     def connected(self) -> bool:
         """
-        Whether there is a connection to the RPC server
+        Whether there is a connection to the BOINC client
+
         It is lost by closing it, and by a request that times out, is cancelled or fails on the
         way: connect() again to go on.
         """
         return self._raw_client.connected
 
     async def connect(self):
+        """
+        Connect to the BOINC client, unless already connected
+
+        Connecting does not authorize: call authorize() next.
+
+        Raises:
+            BOINCConnectionError: The host could not be reached.
+            BOINCTimeoutError: The host did not accept the connection in time.
+        """
         if not self.connected:
             await self._raw_client.connect()
 
     async def close(self):
         """
-        Close the connection to the RPC server
-        The client can be connected again afterwards
+        Close the connection to the BOINC client
+
+        The client can be connected again afterwards.
         """
         await self._raw_client.close()
 
     async def authorize(self, password=None):
         """
-        Authenticate at the server with given password
-        if no password provided, use previous password or password from initialization
-        Returns True. Raises BOINCAuthError if there is no password, keeping the connection, or if the
-        server rejects it. The server hangs up then, so the connection is dropped, as it is when
-        anything else stops the two steps half way: connect() again before trying another password.
+        Authorize the connection with the GUI RPC password
+
+        Without it BOINC refuses the requests that change something, and every request from
+        another host. It lasts as long as the connection: after a new connect(), call it again.
+
+        Args:
+            password: The password to use, kept for the next calls. Without one, the last one
+                given, here or to init_rpc_client(), is used.
+
+        Returns:
+            True.
+
+        Raises:
+            BOINCAuthError: There is no password, and the connection is kept; or BOINC rejected
+                it, and the connection is dropped, since BOINC hangs up then: connect() again
+                before trying another.
+            BOINCCommandError: BOINC answered the first step with an error. The connection is
+                dropped, as it is whenever authorize() stops half way, since BOINC hangs up on a
+                second try on the same one: connect() again before retrying.
+            BOINCConnectionError: As for any request. The connection is dropped.
         """
         # Both steps in one turn, so no other request takes the reply to either of them. The
         # password is chosen inside it too, so a call waiting for its turn cannot change it.
@@ -152,17 +231,53 @@ class RPCClient:
 
     @staticmethod
     def evaluate_reply(reply: ET.Element):
+        """
+        Read the reply to a request that changes something
+
+        Returns:
+            True if the reply is success, and the reply itself otherwise.
+
+        Raises:
+            BOINCAuthError: The reply is unauthorized.
+            BOINCCommandError: The reply is an error.
+        """
         return True if RPCClient._check_reply(reply).tag == Tag.SUCCESS else reply
 
     async def exchange_versions(self):
+        """
+        Get the version of the BOINC client
+
+        Returns:
+            A dict with major, minor and release, such as {"major": 7, "minor": 16, "release": 3}.
+        """
         req = ET.Element(Tag.EXCHANGE_VERSIONS)
         return parse_generic(await self._request(req))
 
     async def get_cc_status(self):
+        """
+        Get the state of the BOINC client: its modes, why it is suspended, and its network
+
+        Returns:
+            A dict, with task_mode, task_suspend_reason, gpu_mode, network_mode and network_status
+            among others. The modes are int: 1 always, 2 auto, 3 never. task_mode_delay,
+            gpu_mode_delay and network_mode_delay are the seconds left of a temporary mode, as
+            float, and 0 without one.
+        """
         req = ET.Element(Tag.GET_CC_STATUS)
         return parse_generic(await self._request(req))
 
     async def get_disk_usage(self):
+        """
+        Get how much of the disk BOINC and each project use, in bytes
+
+        Returns:
+            A dict with:
+                project: A list with a dict for each project, with its master_url and disk_usage.
+                d_total: Size of the disk.
+                d_free: Free space on the disk.
+                d_boinc: Space BOINC uses, leaving the projects out.
+                d_allowed: Space BOINC may use, under its preferences.
+        """
         req = ET.Element(Tag.GET_DISK_USAGE)
         rep = await self._request(req)
         # The projects come as repeated <project> elements, which a dict keeps only the last of,
@@ -176,18 +291,49 @@ class RPCClient:
         return res
 
     async def get_file_transfers(self):
+        """
+        Get the files being uploaded or downloaded
+
+        Returns:
+            A list with a dict for each transfer, [] when there is none.
+        """
         req = ET.Element(Tag.GET_FILE_TRANSFERS)
         return parse_generic(await self._request(req))
 
     async def get_host_info(self):
+        """
+        Get the description of the host: its CPU, memory, disk, operating system and GPUs
+
+        Returns:
+            A dict, with domain_name, p_ncpus, p_model, m_nbytes, os_name and coprocs among others.
+        """
         req = ET.Element(Tag.GET_HOST_INFO)
         return parse_generic(await self._request(req))
 
     async def get_message_count(self):
+        """
+        Get the sequence number of the newest message of the event log
+
+        Returns:
+            The number, an int. It is also the count of messages since the client started.
+        """
         req = ET.Element(Tag.GET_MESSAGE_COUNT)
         return parse_generic(await self._request(req))
 
     async def get_messages(self, seqno=0, translatable=False):
+        """
+        Get the messages of the event log newer than a sequence number
+
+        Args:
+            seqno: Only the messages with a greater sequence number are returned. 0, the default,
+                returns them all; get_message_count() - 3, the last three.
+            translatable: Keep the _("...") markers around the text that the BOINC Manager
+                translates. By default they are removed.
+
+        Returns:
+            A list with a dict for each message, oldest first, with project, pri, seqno, body and
+            time. project is "" for a message from the client itself.
+        """
         req = ET.Element(Tag.GET_MESSAGES)
         s = ET.SubElement(req, Tag.SEQNO)
         s.text = str(seqno)
@@ -196,10 +342,28 @@ class RPCClient:
         return parse_generic(await self._request(req))
 
     async def get_project_status(self):
+        """
+        Get the projects the BOINC client is attached to
+
+        Returns:
+            A list with a Project for each one. Its fields are attributes, such as project_name or
+            user_total_credit, and it compares equal to its master_url.
+        """
         req = ET.Element(Tag.GET_PROJECT_STATUS)
         return [Project(**parse_generic(c)) for c in await self._request(req)]
 
     async def get_results(self, active_only=False):
+        """
+        Get the tasks
+
+        Args:
+            active_only: Only the tasks BOINC has started and that have not finished, leaving out
+                those waiting to start and those done.
+
+        Returns:
+            A list with a dict for each task, [] when there is none, with name, project_url,
+            report_deadline and active_task among others. project_url is a Project.
+        """
         req = ET.Element(Tag.GET_RESULTS)
         if active_only:
             ET.SubElement(req, Tag.ACTIVE_ONLY)
@@ -211,7 +375,16 @@ class RPCClient:
 
     async def abort_result(self, project_url, name):
         """
-        Abort a task
+        Abort a task: BOINC stops it and reports it to its project as aborted. It cannot be undone.
+
+        Args:
+            project_url: The task's project, as a Project or its master URL, such as the
+                project_url of a task from get_results().
+            name: The task's name.
+
+        Returns:
+            True, or the reply when BOINC answers something other than success, as for
+            evaluate_reply().
         """
         req = ET.Element(Tag.ABORT_RESULT)
         _append_project_element(req, project_url, name)
@@ -219,7 +392,16 @@ class RPCClient:
 
     async def suspend_result(self, project_url, name):
         """
-        suspend a task
+        Suspend a task until resume_result()
+
+        Args:
+            project_url: The task's project, as a Project or its master URL, such as the
+                project_url of a task from get_results().
+            name: The task's name.
+
+        Returns:
+            True, or the reply when BOINC answers something other than success, as for
+            evaluate_reply().
         """
         req = ET.Element(Tag.SUSPEND_RESULT)
         _append_project_element(req, project_url, name)
@@ -227,7 +409,16 @@ class RPCClient:
 
     async def resume_result(self, project_url, name):
         """
-        suspend a task
+        Resume a task suspended by suspend_result()
+
+        Args:
+            project_url: The task's project, as a Project or its master URL, such as the
+                project_url of a task from get_results().
+            name: The task's name.
+
+        Returns:
+            True, or the reply when BOINC answers something other than success, as for
+            evaluate_reply().
         """
         req = ET.Element(Tag.RESUME_RESULT)
         _append_project_element(req, project_url, name)
@@ -235,20 +426,35 @@ class RPCClient:
 
     async def quit(self):
         """
-        Quit the boinc client
-        NOTICE: this stops the running boinc client and all computations, not the rpc client
+        Stop the BOINC client, and with it every task
+
+        It stops the program on the host, not this client. Starting it again has to be done on the
+        host.
+
+        Returns:
+            True, or the reply when BOINC answers something other than success.
         """
         return await self._request_auth(ET.Element(Tag.QUIT))
 
     async def network_available(self):
         """
-        retry deferred network communication
+        Retry now the network communication BOINC has deferred, such as transfers that failed
+
+        Returns:
+            True, or the reply when BOINC answers something other than success.
         """
         return await self._request_auth(ET.Element(Tag.NETWORK_AVAILABLE))
 
     async def set_language(self, language: str):
         """
-        Set language for projects
+        Set the language of the user, which BOINC sends to the projects in its requests to them
+
+        Args:
+            language: The language, as a code such as "es". It goes in the Accept-Language header
+                of those requests.
+
+        Returns:
+            True, or the reply when BOINC answers something other than success.
         """
         req = ET.Element(Tag.SET_LANGUAGE)
         a = ET.SubElement(req, Tag.LANGUAGE)
@@ -257,8 +463,15 @@ class RPCClient:
 
     async def set_run_mode(self, mode: Mode, duration=0):
         """
-        set run mode for given duration
-        duration = 0 means permanent change
+        Set when BOINC may compute
+
+        Args:
+            mode: The mode, a Mode.
+            duration: Seconds the mode lasts before going back to the permanent one. 0, the
+                default, makes it the permanent one.
+
+        Returns:
+            True, or the reply when BOINC answers something other than success.
         """
         req = ET.Element(Tag.SET_RUN_MODE)
         ET.SubElement(req, mode.value)
@@ -268,8 +481,15 @@ class RPCClient:
 
     async def set_network_mode(self, mode: Mode, duration=0):
         """
-        set network mode for given duration
-        duration = 0 means permanent change
+        Set when BOINC may use the network
+
+        Args:
+            mode: The mode, a Mode.
+            duration: Seconds the mode lasts before going back to the permanent one. 0, the
+                default, makes it the permanent one.
+
+        Returns:
+            True, or the reply when BOINC answers something other than success.
         """
         req = ET.Element(Tag.SET_NETWORK_MODE)
         ET.SubElement(req, mode.value)
@@ -279,8 +499,15 @@ class RPCClient:
 
     async def set_gpu_mode(self, mode: Mode, duration=0):
         """
-        set gpu mode for given duration
-        duration = 0 means permanent change
+        Set when BOINC may use the GPU
+
+        Args:
+            mode: The mode, a Mode.
+            duration: Seconds the mode lasts before going back to the permanent one. 0, the
+                default, makes it the permanent one.
+
+        Returns:
+            True, or the reply when BOINC answers something other than success.
         """
         req = ET.Element(Tag.SET_GPU_MODE)
         ET.SubElement(req, mode.value)

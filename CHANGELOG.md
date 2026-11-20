@@ -14,6 +14,9 @@
     and the memory sizes are `float`, and the other CUDA properties and the `pci_info` ids are `int`.
   - From `get_project_status()`: `sched_priority` is a `float`, and `project_files_downloaded_time`
     a `datetime`, like the other times.
+- **Added** docstrings to every public method, saying what it returns and raises, and sections on
+  the methods and the errors to the README. The docstring of `resume_result()` said it suspended
+  the task.
 
 ## 0.4.0
 

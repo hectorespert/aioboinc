@@ -8,10 +8,8 @@ PASSWORD_BOINC = "example_password"
 
 
 async def main():
-    # Every error is a BOINCError. A host that cannot be reached, or that stops answering, raises
-    # BOINCConnectionError; one that takes more than 30 seconds to answer, its subclass
-    # BOINCTimeoutError. Pass timeout= to change it, or timeout=None to wait forever. A request
-    # that BOINC answers with an error, such as a task that does not exist, raises BOINCCommandError.
+    # A host that cannot be reached raises BOINCConnectionError. See Errors in the README for the
+    # rest.
     rpc_client = await init_rpc_client(IP_BOINC, PASSWORD_BOINC)
     try:
         # Connecting does not authenticate. Do it before anything else: without it BOINC refuses
