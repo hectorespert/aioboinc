@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- **Changed** the error for an IPv6 address as `host`. BOINC listens on IPv4 only, and it raised
+  `BOINCConnectionError` with `Address family for hostname not supported`; it now says so, without
+  trying to connect. The docstring of `init_rpc_client()` and the README say it too.
+
 ## 0.6.0
 
 - **Changed** times, such as the `time` of a message or the `report_deadline` of a task, to be

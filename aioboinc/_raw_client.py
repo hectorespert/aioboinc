@@ -10,6 +10,7 @@ Note that this client is Async, based on asyncio
 
 import asyncio
 import contextlib
+import ipaddress
 import xml.etree.ElementTree as ET
 from socket import AF_INET
 
@@ -22,6 +23,13 @@ REPLY_TAG = "boinc_gui_rpc_reply"
 REQUEST_TAG = "boinc_gui_rpc_request"
 END_OF_MESSAGE = b"\x03"
 BOINC_ENCODING = "ISO-8859-1"
+
+
+def _is_ipv6_address(host: str) -> bool:
+    try:
+        return ipaddress.ip_address(host).version == 6
+    except ValueError:
+        return False
 
 
 class _RPCClientRaw:
@@ -51,9 +59,15 @@ class _RPCClientRaw:
     async def connect(self):
         # Let go of a connection the host hung up on before opening another
         self._abort()
+        if _is_ipv6_address(self.host):
+            raise BOINCConnectionError(
+                f"Could not connect to {self.host}: BOINC listens on IPv4 only"
+            )
         deadline = asyncio.timeout(self.timeout)
         try:
             async with deadline:
+                # The BOINC client listens on IPv4 only (init_tcp() in client/gui_rpc_server.cpp),
+                # so a name is resolved to its IPv4 addresses, without trying IPv6 ones first.
                 self._reader, self._writer = await asyncio.open_connection(
                     self.host, self.port, family=AF_INET, limit=1024*5000
                 )

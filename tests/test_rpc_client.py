@@ -447,6 +447,19 @@ class ConnectRefusedTest(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(client.connected)
 
 
+class ConnectIPv6Test(unittest.IsolatedAsyncioTestCase):
+
+    async def test_an_ipv6_address_raises_connection_error_without_trying(self):
+        client = RPCClient("::1")
+        with (
+            mock.patch("asyncio.open_connection") as open_connection,
+            self.assertRaisesRegex(BOINCConnectionError, "BOINC listens on IPv4 only"),
+        ):
+            await client.connect()
+        open_connection.assert_not_called()
+        self.assertFalse(client.connected)
+
+
 class ConnectTest(RPCClientTestCase):
 
     async def test_connecting_twice_keeps_the_same_connection(self):

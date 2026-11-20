@@ -50,7 +50,9 @@ async def init_rpc_client(
     Connecting does not authorize: call authorize() next.
 
     Args:
-        host: Name or IPv4 address of the host the BOINC client runs on.
+        host: Name or IPv4 address of the host the BOINC client runs on. BOINC listens on IPv4
+            only, so a name is resolved to its IPv4 addresses, and an IPv6 address raises
+            BOINCConnectionError.
         password: The GUI RPC password, from gui_rpc_auth.cfg in the BOINC data directory.
             authorize() uses it unless it is given another.
         port: Port the BOINC client listens on.
