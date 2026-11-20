@@ -82,8 +82,11 @@ class RPCClient:
 
     Each method sends one request and waits for its reply. Requests made at once, for example with
     asyncio.gather(), wait for their turn. A reply is parsed into dicts and lists keyed by the
-    names of its XML elements: numbers become int or float, flags bool, times naive datetime in
-    local time, durations timedelta, and empty texts "". For what each reply holds, see
+    names of its XML elements, and the type of each value depends on its element: numbers become
+    int or float, flags bool, times naive datetime in local time, the CPU and elapsed times of a
+    task timedelta, and empty texts "". Other durations, such as the *_mode_delay of
+    get_cc_status(), are float seconds. An element the parser does not know stays a str. For what
+    each reply holds, see
     https://boinc.berkeley.edu/trac/wiki/GuiRpcProtocol#RequestsandReplies
 
     The queries need authorize() first only when the client is on another host. The requests
@@ -252,11 +255,13 @@ class RPCClient:
 
     async def get_cc_status(self):
         """
-        Get the state of the BOINC client: its modes, why it is suspended, and the state of its network
+        Get the state of the BOINC client: its modes, why it is suspended, and its network
 
         Returns:
             A dict, with task_mode, task_suspend_reason, gpu_mode, network_mode and network_status
-            among others. The modes are numbers: 1 always, 2 auto, 3 never.
+            among others. The modes are int: 1 always, 2 auto, 3 never. task_mode_delay,
+            gpu_mode_delay and network_mode_delay are the seconds left of a temporary mode, as
+            float, and 0 without one.
         """
         req = ET.Element(Tag.GET_CC_STATUS)
         return parse_generic(await self._request(req))
