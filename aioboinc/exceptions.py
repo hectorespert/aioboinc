@@ -18,6 +18,9 @@ BOINCClientError = BOINCError
 class BOINCAuthError(BOINCError):
     """
     The password is wrong or missing, or the request needs authorize() first
+    From authorize(), the connection is dropped if the server rejected the password, since it hangs
+    up then, and kept if there was no password to send. From any other request it is kept, so that
+    authorize() can follow on it.
     """
 
 

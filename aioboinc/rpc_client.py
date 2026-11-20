@@ -87,8 +87,9 @@ class RPCClient:
         """
         Authenticate at the server with given password
         if no password provided, use previous password or password from initialization
-        Returns True. Raises BOINCAuthError if there is no password or the server rejects it, in
-        which case the server hangs up: connect() again before trying another password.
+        Returns True. Raises BOINCAuthError if there is no password, keeping the connection, or if the
+        server rejects it. The server hangs up then, so the connection is dropped, as it is when
+        anything else stops the two steps half way: connect() again before trying another password.
         """
         # Both steps in one turn, so no other request takes the reply to either of them. The
         # password is chosen inside it too, so a call waiting for its turn cannot change it.
