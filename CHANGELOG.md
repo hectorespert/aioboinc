@@ -5,6 +5,15 @@
 - **Fixed** `get_disk_usage()` leaving out the totals of the disk. It returned only the usage of
   each project, under `project`; it now returns `d_total`, `d_free`, `d_boinc` and `d_allowed`
   next to it, in bytes.
+- **Fixed** numbers, flags and a time that came as strings, because the parser did not know their
+  elements:
+  - `gpu_mode` from `get_cc_status()` came as `"2"`, while `task_mode` and `network_mode` were
+    already `int`.
+  - From `get_host_info()`: `timezone` (seconds from UTC) and `n_usable_coprocs` are `int`, and
+    `wsl_available` a `bool`. In each GPU under `coprocs`, `have_cuda` is a `bool`, `available_ram`
+    and the memory sizes are `float`, and the other CUDA properties and the `pci_info` ids are `int`.
+  - From `get_project_status()`: `sched_priority` is a `float`, and `project_files_downloaded_time`
+    a `datetime`, like the other times.
 
 ## 0.4.0
 
