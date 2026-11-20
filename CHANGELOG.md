@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- **Fixed** flags that came as the strings `"0"` and `"1"`, because the parser did not know them:
+  `manager_must_quit` of `get_cc_status()`, and `have_cal` of an AMD GPU and `have_metal` of an
+  Apple GPU in the `coprocs` of `get_host_info()`. They are `bool`.
+- **Changed** `ams_password_error` of `get_cc_status()` from `int` to `bool`, like the other flags.
+  `bool` is an `int`, so comparing it with `0` or `1` still works.
+
 ## 0.6.1
 
 - **Changed** the error for an IPv6 address as `host`. BOINC listens on IPv4 only, and it raised

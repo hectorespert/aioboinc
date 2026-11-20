@@ -10,7 +10,6 @@ INTEGER_TAG = {
     Tag.MINOR,
     Tag.RELEASE,
     Tag.NETWORK_STATUS,
-    Tag.AMS_PASSWORD_ERROR,
     Tag.TASK_SUSPEND_REASON,
     Tag.TASK_MODE,
     Tag.TASK_MODE_PERM,
@@ -130,6 +129,17 @@ BOOL_TAG = {
     Tag.IS_UPLOAD,
     Tag.HAVE_CUDA,
     Tag.WSL_AVAILABLE,
+    Tag.AMS_PASSWORD_ERROR,
+    Tag.MANAGER_MUST_QUIT,
+    # Of an AMD and an Apple GPU, in coprocs
+    Tag.HAVE_CAL,
+    Tag.HAVE_METAL,
+    # In replies this client does not ask for yet: get_state, get_notices and the proxy settings
+    Tag.EXECUTING_AS_DAEMON,
+    Tag.HAVE_ATI,
+    Tag.IS_PRIVATE,
+    Tag.NO_AUTODETECT,
+    Tag.SOCKS5_REMOTE_DNS,
     # The BOINC client sends these as an empty element when they are set, and leaves them out when
     # they are not.
     Tag.AMDRT_DETECTED,
