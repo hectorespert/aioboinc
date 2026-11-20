@@ -6,6 +6,8 @@ reply, so no test needs a real BOINC client or the network.
 """
 
 import asyncio
+import socket
+import struct
 import unittest
 
 from aioboinc import init_rpc_client
@@ -59,6 +61,14 @@ class FakeBoinc:
         for writer in self._writers:
             writer.close()
             await writer.wait_closed()
+
+    def reset(self):
+        """Reset every connection, as a host that crashes or a network that drops it does"""
+        for writer in self._writers:
+            # Lingering for 0 seconds makes closing send a reset instead of an orderly end
+            linger = struct.pack("ii", 1, 0)
+            writer.get_extra_info("socket").setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, linger)
+            writer.transport.abort()
 
     async def _handle(self, reader, writer):
         self._writers.append(writer)

@@ -37,8 +37,14 @@ class _RPCClientRaw:
 
     @property
     def connected(self) -> bool:
-        # A host that hung up leaves the writer in place, but the reader has seen the end
-        return self._reader is not None and not self._reader.at_eof()
+        # A host that hangs up or resets the connection leaves the writer in place. A hang-up shows
+        # as the end of the stream in the reader, and a reset as a transport that is closing.
+        return (
+            self._reader is not None
+            and self._writer is not None
+            and not self._reader.at_eof()
+            and not self._writer.is_closing()
+        )
 
     async def connect(self):
         # Let go of a connection the host hung up on before opening another
