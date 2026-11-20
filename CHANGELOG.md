@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **Changed** the minimum Python version to 3.11. Python 3.10 reached its end of life in October
+  2026, and Home Assistant needs 3.13 or later.
+
 ## 0.3.0
 
 - **Fixed** requests made at once on the same client, for example with `asyncio.gather()`, failing

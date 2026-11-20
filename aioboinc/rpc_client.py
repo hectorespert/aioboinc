@@ -25,7 +25,9 @@ class Mode(Enum):
 
 
 async def init_rpc_client(
-    host: str, password=None, port=GUI_RPC_DEFAULT_PORT, timeout: float | None = DEFAULT_TIMEOUT
+    # timeout is not a limit on this call, which asyncio.timeout() around it would replace, but
+    # the one the client keeps for connecting and for every request afterwards.
+    host: str, password=None, port=GUI_RPC_DEFAULT_PORT, timeout: float | None = DEFAULT_TIMEOUT,  # noqa: ASYNC109
 ):
     """
     Creates RPC Client and initiates connection to RPC Server
