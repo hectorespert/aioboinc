@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.6.0
 
 - **Changed** times, such as the `time` of a message or the `report_deadline` of a task, to be
   aware `datetime` in UTC. They were naive, in the time zone of the host running this client, which
