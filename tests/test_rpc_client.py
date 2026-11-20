@@ -116,6 +116,63 @@ class QueryTest(RPCClientTestCase):
         self.assertEqual(status["task_mode_delay"], 0.0)
 
 
+class ConcurrentRequestsTest(RPCClientTestCase):
+
+    replies = (web_state.seqno, web_state.cc_status)
+
+    async def test_requests_made_at_once_each_get_their_own_reply(self):
+        count, status = await asyncio.gather(
+            self.client.get_message_count(), self.client.get_cc_status()
+        )
+        self.assertEqual(self.boinc.requests, ["<get_message_count/>", "<get_cc_status/>"])
+        self.assertEqual(count, 47)
+        self.assertEqual(status["task_mode"], 2)
+
+
+class ConcurrentAuthorizeTest(RPCClientTestCase):
+
+    replies = (
+        "<boinc_gui_rpc_reply><nonce>1234.5678</nonce></boinc_gui_rpc_reply>",
+        "<boinc_gui_rpc_reply><authorized/></boinc_gui_rpc_reply>",
+        web_state.seqno,
+    )
+
+    async def test_no_request_slips_in_between_the_two_steps(self):
+        authorized, count = await asyncio.gather(
+            self.client.authorize(), self.client.get_message_count()
+        )
+        self.assertEqual(
+            [r.split(">")[0] + ">" for r in self.boinc.requests],
+            ["<auth1/>", "<auth2>", "<get_message_count/>"],
+        )
+        self.assertIs(authorized, True)
+        self.assertEqual(count, 47)
+
+
+class ConcurrentAuthorizeWithOtherPasswordsTest(RPCClientTestCase):
+
+    replies = (
+        "<boinc_gui_rpc_reply><nonce>1</nonce></boinc_gui_rpc_reply>",
+        "<boinc_gui_rpc_reply><authorized/></boinc_gui_rpc_reply>",
+        "<boinc_gui_rpc_reply><nonce>2</nonce></boinc_gui_rpc_reply>",
+        "<boinc_gui_rpc_reply><unauthorized/></boinc_gui_rpc_reply>",
+    )
+
+    async def test_each_call_answers_with_its_own_password(self):
+        await asyncio.gather(self.client.authorize("first"), self.client.authorize("second"))
+        self.assertEqual(
+            self.boinc.requests,
+            [
+                "<auth1/>",
+                f"<auth2><nonce_hash>{md5(b'1first').hexdigest()}</nonce_hash></auth2>",
+                "<auth1/>",
+                f"<auth2><nonce_hash>{md5(b'2second').hexdigest()}</nonce_hash></auth2>",
+            ],
+        )
+        # The last call to finish leaves its password for the next authorize() without one
+        self.assertEqual(self.client.password, "second")
+
+
 class InvalidReplyTest(RPCClientTestCase):
 
     replies = ("<html/>",)

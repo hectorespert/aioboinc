@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- **Fixed** requests made at once on the same client, for example with `asyncio.gather()`, failing
+  with `RuntimeError: readuntil() called while another coroutine is already waiting`. They now wait
+  for their turn, and `authorize()` keeps its two steps together so no request takes their replies.
+
 ## 0.2.0
 
 - **Fixed** flags that are `0` in the reply, such as `p_vm_extensions_disabled` or `have_opencl`,

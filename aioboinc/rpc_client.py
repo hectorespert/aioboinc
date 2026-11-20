@@ -3,6 +3,7 @@ Client making requests to RPC server
 managing authentication etc
 """
 
+import asyncio
 import xml.etree.ElementTree as ET
 from enum import Enum
 from hashlib import md5
@@ -49,6 +50,9 @@ class RPCClient:
         Should not be called directly, use init_rpc_client
         """
         self._raw_client = _RPCClientRaw(host, port)
+        # One connection carries one exchange at a time: a reply has no id to match it to its
+        # request, so requests made at once wait for their turn.
+        self._lock = asyncio.Lock()
         self.password = password
         self.connected = False
 
@@ -70,20 +74,25 @@ class RPCClient:
         Authenticate at the server with given password
         if no password provided, use previous password or password from initialization
         """
-        if password is not None:
-            self.password = password
-        if self.password is None:
-            return False
-        auth1 = ET.Element(Tag.AUTH1)
-        nonce = (await self._request(auth1)).text
-        auth2 = ET.Element(Tag.AUTH2)
-        nonce_hash = ET.SubElement(auth2, Tag.NONCE_HASH)
-        salted = nonce + self.password
-        nonce_hash.text = md5(bytes(salted, encoding="UTF8")).hexdigest()
-        return (await self._request(auth2)).tag == Tag.AUTHORIZED
+        # Both steps in one turn, so no other request takes the reply to either of them. The
+        # password is chosen inside it too, so a call waiting for its turn cannot change it.
+        async with self._lock:
+            if password is not None:
+                self.password = password
+            if self.password is None:
+                return False
+            password = self.password
+            auth1 = ET.Element(Tag.AUTH1)
+            nonce = (await self._raw_client.request(auth1)).text
+            auth2 = ET.Element(Tag.AUTH2)
+            nonce_hash = ET.SubElement(auth2, Tag.NONCE_HASH)
+            salted = nonce + password
+            nonce_hash.text = md5(bytes(salted, encoding="UTF8")).hexdigest()
+            return (await self._raw_client.request(auth2)).tag == Tag.AUTHORIZED
 
     async def _request(self, req: ET.Element):
-        return await self._raw_client.request(req)
+        async with self._lock:
+            return await self._raw_client.request(req)
 
     async def _request_auth(self, req: ET.Element):
         """
