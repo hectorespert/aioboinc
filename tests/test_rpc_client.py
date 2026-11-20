@@ -293,6 +293,28 @@ class CloseTest(RPCClientTestCase):
         self.assertIs(await self.client.set_run_mode(Mode.AUTO), True)
 
 
+class HungUpTest(RPCClientTestCase):
+
+    async def asyncSetUp(self):
+        await super().asyncSetUp()
+        await self.boinc.hang_up()
+        # The client learns about it once the event loop hands it the end of the stream
+        for _ in range(500):
+            if not self.client.connected:
+                break
+            await asyncio.sleep(0.01)
+
+    async def test_a_host_that_hangs_up_is_no_longer_connected(self):
+        self.assertFalse(self.client.connected)
+
+    async def test_connect_opens_a_new_connection(self):
+        old = self.client._raw_client._writer
+        await self.client.connect()
+        self.assertTrue(self.client.connected)
+        self.assertTrue(old.is_closing())
+        self.assertIs(await self.client.set_run_mode(Mode.AUTO), True)
+
+
 class NeverConnectedTest(unittest.IsolatedAsyncioTestCase):
 
     async def test_close_is_harmless(self):

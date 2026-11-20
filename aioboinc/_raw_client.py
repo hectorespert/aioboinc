@@ -37,9 +37,12 @@ class _RPCClientRaw:
 
     @property
     def connected(self) -> bool:
-        return self._writer is not None
+        # A host that hung up leaves the writer in place, but the reader has seen the end
+        return self._reader is not None and not self._reader.at_eof()
 
     async def connect(self):
+        # Let go of a connection the host hung up on before opening another
+        self._abort()
         try:
             self._reader, self._writer = await asyncio.wait_for(
                 asyncio.open_connection(self.host, self.port, family=AF_INET, limit=1024*5000),

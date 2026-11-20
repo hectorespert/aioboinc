@@ -12,7 +12,8 @@
   reply to be read by the next request as its own. The connection is now dropped instead, and
   `connected` becomes `False`: call `connect()` and `authorize()` again to go on.
 - **Changed** `RPCClient.connected` to a read-only property that tells whether there is a
-  connection. It stayed `True` after the connection was lost.
+  connection. It stayed `True` after the connection was lost, so `connect()` did not open a new one,
+  including when the BOINC client had hung up.
 
 ## 0.2.0
 

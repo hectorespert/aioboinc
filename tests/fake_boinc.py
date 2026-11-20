@@ -44,6 +44,7 @@ class FakeBoinc:
         self.received = asyncio.Event()
         self.disconnected = asyncio.Event()
         self._server = None
+        self._writers = []
 
     async def start(self):
         self._server = await asyncio.start_server(self._handle, "127.0.0.1", 0)
@@ -53,7 +54,14 @@ class FakeBoinc:
         self._server.close()
         await self._server.wait_closed()
 
+    async def hang_up(self):
+        """Close every connection from this end, as a BOINC client that quits does"""
+        for writer in self._writers:
+            writer.close()
+            await writer.wait_closed()
+
     async def _handle(self, reader, writer):
+        self._writers.append(writer)
         try:
             while True:
                 try:
