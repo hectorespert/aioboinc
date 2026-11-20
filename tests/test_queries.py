@@ -172,14 +172,21 @@ class ProjectStatusTest(RPCClientTestCase):
         project = (await self.client.get_project_status())[0]
         self.assertIs(project.dont_use_dcf, True)
 
-    async def test_the_priority_is_a_number_and_the_download_time_a_time(self):
+    async def test_the_priority_is_a_number_and_an_unset_download_time_none(self):
         project = (await self.client.get_project_status())[0]
         self.assertEqual(project.sched_priority, 0.0)
-        self.assertEqual(project.project_files_downloaded_time, datetime(1970, 1, 1, tzinfo=UTC))
+        self.assertIsNone(project.project_files_downloaded_time)
 
     async def test_a_time_is_in_utc(self):
         project = (await self.client.get_project_status())[1]
         self.assertIs(project.last_rpc_time.tzinfo, UTC)
+
+    async def test_a_time_that_is_not_set_is_none(self):
+        unset, backed_off = await self.client.get_project_status()
+        # BOINC sends 0 when the project has no backoff and has not asked for a next request
+        self.assertIsNone(unset.min_rpc_time)
+        self.assertIsNone(unset.next_rpc_time)
+        self.assertEqual(backed_off.min_rpc_time, datetime.fromtimestamp(1586729657.140112, UTC))
 
     async def test_counters_that_look_like_flags_are_numbers(self):
         project = (await self.client.get_project_status())[0]

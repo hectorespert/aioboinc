@@ -229,11 +229,16 @@ INTEGER_TAG_PARSER = int
 FLOAT_TAG_PARSER = float
 
 
-def TIME_TAG_PARSER(x: str) -> datetime:
+def TIME_TAG_PARSER(x: str) -> datetime | None:
     # BOINC sends a time as seconds since the epoch, which name an instant whatever the time zone.
     # Without a tzinfo it would be read in the time zone of the host running this client, which
     # need not be the one of the host running BOINC, and could not be compared with an aware time.
-    return datetime.fromtimestamp(float(x), UTC)
+    seconds = float(x)
+    # BOINC sends 0 for a time that has not been set, such as the next_rpc_time of a project that
+    # has not asked for one. It is not 1970.
+    if seconds == 0:
+        return None
+    return datetime.fromtimestamp(seconds, UTC)
 
 
 def TIMEDELTA_TAG_PARSER(x: str) -> timedelta:

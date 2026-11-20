@@ -7,6 +7,9 @@
   need not be the one BOINC runs on, and could not be compared with an aware `datetime` such as
   `datetime.now(UTC)` without a `TypeError`. They name the same instant: convert them with
   `astimezone()` to show them in local time.
+- **Changed** a time that BOINC sends as `0`, because it is not set, to be `None`. It was
+  1970-01-01. Among them are `min_rpc_time` and `next_rpc_time` of a project with no backoff and no
+  request pending, and `project_files_downloaded_time`.
 
 ## 0.5.0
 
