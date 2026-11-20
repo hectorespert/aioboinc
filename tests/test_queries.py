@@ -40,6 +40,29 @@ class DiskUsageTest(RPCClientTestCase):
             ],
         )
 
+    async def test_returns_the_totals_of_the_disk(self):
+        usage = await self.client.get_disk_usage()
+        self.assertEqual(usage["d_total"], 30376042496.0)
+        self.assertEqual(usage["d_free"], 23042801664.0)
+        self.assertEqual(usage["d_boinc"], 422143.0)
+        self.assertEqual(usage["d_allowed"], 15188021248.0)
+
+
+class DiskUsageWithoutProjectsTest(RPCClientTestCase):
+
+    replies = (
+        "<boinc_gui_rpc_reply><disk_usage_summary>"
+        "<d_total>100.000000</d_total><d_free>40.000000</d_free>"
+        "<d_boinc>0.000000</d_boinc><d_allowed>50.000000</d_allowed>"
+        "</disk_usage_summary></boinc_gui_rpc_reply>",
+    )
+
+    async def test_returns_no_projects_and_the_totals(self):
+        self.assertEqual(
+            await self.client.get_disk_usage(),
+            {"project": [], "d_total": 100.0, "d_free": 40.0, "d_boinc": 0.0, "d_allowed": 50.0},
+        )
+
 
 class FileTransfersTest(RPCClientTestCase):
 
