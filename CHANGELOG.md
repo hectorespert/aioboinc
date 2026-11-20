@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.6.1
 
 - **Changed** the error for an IPv6 address as `host`. BOINC listens on IPv4 only, and it raised
   `BOINCConnectionError` with `Address family for hostname not supported`; it now says so, without
