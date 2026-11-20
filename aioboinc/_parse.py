@@ -106,8 +106,6 @@ FLOAT_TAG = {
     Tag.M_NBYTES,
     Tag.M_CACHE,
     Tag.M_SWAP,
-    Tag.D_TOTAL,
-    Tag.D_FREE,
     Tag.PEAK_FLOPS,
     Tag.XFER_SPEED,
     Tag.SCHED_PRIORITY,
@@ -211,7 +209,6 @@ TIMEDELTA_TAG = {
     Tag.ESTIMATED_CPU_TIME_REMAINING,
     Tag.CHECKPOINT_CPU_TIME,
     Tag.CURRENT_CPU_TIME,
-    Tag.ELAPSED_TIME,
     Tag.TIME_SO_FAR,
 }
 
