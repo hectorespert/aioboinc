@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0
 
 - **Fixed** requests made at once on the same client, for example with `asyncio.gather()`, failing
   with `RuntimeError: readuntil() called while another coroutine is already waiting`. They now wait
