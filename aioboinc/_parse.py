@@ -58,6 +58,21 @@ INTEGER_TAG = {
     Tag.SCHED_RPC_PENDING,
     Tag.SEND_TIME_STATS_LOG,
     Tag.SEND_JOB_LOG,
+    Tag.GPU_MODE,
+    Tag.TIMEZONE,
+    Tag.N_USABLE_COPROCS,
+    # The PCI address and properties of an NVIDIA GPU, in coprocs
+    Tag.BUS_ID,
+    Tag.DEVICE_ID,
+    Tag.DOMAIN_ID,
+    Tag.CUDAVERSION,
+    Tag.DRVVERSION,
+    Tag.REGSPERBLOCK,
+    Tag.WARPSIZE,
+    Tag.MAXTHREADSPERBLOCK,
+    Tag.CLOCKRATE,
+    Tag.DEVICEOVERLAP,
+    Tag.MULTIPROCESSORCOUNT,
 }
 
 FLOAT_TAG = {
@@ -96,6 +111,13 @@ FLOAT_TAG = {
     Tag.D_FREE,
     Tag.PEAK_FLOPS,
     Tag.XFER_SPEED,
+    Tag.SCHED_PRIORITY,
+    Tag.AVAILABLE_RAM,
+    Tag.TOTALGLOBALMEM,
+    Tag.SHAREDMEMPERBLOCK,
+    Tag.MEMPITCH,
+    Tag.TOTALCONSTMEM,
+    Tag.TEXTUREALIGNMENT,
 }
 
 BOOL_TAG = {
@@ -106,6 +128,8 @@ BOOL_TAG = {
     Tag.AVAILABLE,
     Tag.ENDIAN_LITTLE,
     Tag.IS_UPLOAD,
+    Tag.HAVE_CUDA,
+    Tag.WSL_AVAILABLE,
     # The BOINC client sends these as an empty element when they are set, and leaves them out when
     # they are not.
     Tag.AMDRT_DETECTED,
@@ -194,6 +218,7 @@ TIME_TAG = {
     Tag.RECEIVED_TIME,
     Tag.FIRST_REQUEST_TIME,
     Tag.NEXT_REQUEST_TIME,
+    Tag.PROJECT_FILES_DOWNLOADED_TIME,
 }
 
 TAG_PARSER: dict[str, Callable[[str], Any]] = {

@@ -25,6 +25,17 @@ class ExchangeVersionsTest(RPCClientTestCase):
         self.assertEqual(self.boinc.requests, ["<exchange_versions/>"])
 
 
+class CcStatusTest(RPCClientTestCase):
+
+    replies = (web_state.cc_status,)
+
+    async def test_every_mode_is_a_number(self):
+        status = await self.client.get_cc_status()
+        self.assertEqual(
+            [status[mode] for mode in ("task_mode", "gpu_mode", "network_mode")], [2, 2, 2]
+        )
+
+
 class DiskUsageTest(RPCClientTestCase):
 
     replies = (web_state.disk_usage_summary,)
@@ -92,6 +103,21 @@ class HostInfoTest(RPCClientTestCase):
         info = await self.client.get_host_info()
         self.assertIs(info["p_vm_extensions_disabled"], False)
         self.assertIs(info["coprocs"][0]["have_opencl"], True)
+        self.assertIs(info["coprocs"][0]["have_cuda"], True)
+        self.assertIs(info["wsl_available"], False)
+
+    async def test_numbers_are_numbers(self):
+        info = await self.client.get_host_info()
+        self.assertEqual(info["timezone"], 7200)
+        self.assertEqual(info["n_usable_coprocs"], 1)
+
+    async def test_the_properties_of_a_gpu_are_numbers(self):
+        gpu = (await self.client.get_host_info())["coprocs"][0]
+        self.assertEqual(gpu["available_ram"], 4167041024.0)
+        self.assertEqual(gpu["totalGlobalMem"], 4294967295.0)
+        self.assertEqual(gpu["warpSize"], 32)
+        self.assertEqual(gpu["clockRate"], 1708500)
+        self.assertEqual(gpu["pci_info"]["bus_id"], 1)
 
 
 class MessageCountTest(RPCClientTestCase):
@@ -145,6 +171,11 @@ class ProjectStatusTest(RPCClientTestCase):
     async def test_a_flag_sent_as_an_empty_element_is_true(self):
         project = (await self.client.get_project_status())[0]
         self.assertIs(project.dont_use_dcf, True)
+
+    async def test_the_priority_is_a_number_and_the_download_time_a_time(self):
+        project = (await self.client.get_project_status())[0]
+        self.assertEqual(project.sched_priority, 0.0)
+        self.assertEqual(project.project_files_downloaded_time, datetime.fromtimestamp(0))
 
     async def test_counters_that_look_like_flags_are_numbers(self):
         project = (await self.client.get_project_status())[0]
