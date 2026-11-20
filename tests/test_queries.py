@@ -36,6 +36,32 @@ class CcStatusTest(RPCClientTestCase):
         )
 
 
+class CcStatusFlagsTest(RPCClientTestCase):
+
+    replies = (web_state.cc_status,)
+
+    async def test_flags_are_flags(self):
+        status = await self.client.get_cc_status()
+        self.assertIs(status["ams_password_error"], False)
+        self.assertIs(status["disallow_attach"], False)
+        self.assertIs(status["simple_gui_only"], False)
+
+
+class CcStatusFlagsSetTest(RPCClientTestCase):
+
+    # BOINC adds manager_must_quit, as 1, only when an update asks the Manager to quit
+    replies = (
+        web_state.cc_status.replace(
+            "<ams_password_error>0</ams_password_error>", "<ams_password_error>1</ams_password_error>"
+        ).replace("</cc_status>", "   <manager_must_quit>1</manager_must_quit>\n</cc_status>"),
+    )
+
+    async def test_set_flags_are_true(self):
+        status = await self.client.get_cc_status()
+        self.assertIs(status["ams_password_error"], True)
+        self.assertIs(status["manager_must_quit"], True)
+
+
 class DiskUsageTest(RPCClientTestCase):
 
     replies = (web_state.disk_usage_summary,)
@@ -127,6 +153,39 @@ class MessageCountTest(RPCClientTestCase):
     async def test_returns_a_number(self):
         self.assertEqual(await self.client.get_message_count(), 47)
         self.assertEqual(self.boinc.requests, ["<get_message_count/>"])
+
+
+class HostInfoWithAmdAndAppleGpusTest(RPCClientTestCase):
+
+    # As COPROC_ATI::write_xml() and COPROC_APPLE::write_xml() in lib/coproc.cpp write them
+    replies = (
+        """<boinc_gui_rpc_reply>
+<host_info>
+    <coprocs>
+<coproc_ati>
+   <count>1</count>
+   <name>Radeon RX 580</name>
+   <have_cal>0</have_cal>
+   <have_opencl>1</have_opencl>
+</coproc_ati>
+<coproc_apple_gpu>
+   <count>1</count>
+   <model>Apple M1</model>
+   <have_metal>1</have_metal>
+   <have_opencl>0</have_opencl>
+</coproc_apple_gpu>
+    </coprocs>
+</host_info>
+</boinc_gui_rpc_reply>
+""",
+    )
+
+    async def test_flags_of_a_gpu_are_flags(self):
+        amd, apple = (await self.client.get_host_info())["coprocs"]
+        self.assertIs(amd["have_cal"], False)
+        self.assertIs(amd["have_opencl"], True)
+        self.assertIs(apple["have_metal"], True)
+        self.assertIs(apple["have_opencl"], False)
 
 
 class MessagesTest(RPCClientTestCase):

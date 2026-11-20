@@ -263,7 +263,9 @@ class RPCClient:
             A dict, with task_mode, task_suspend_reason, gpu_mode, network_mode and network_status
             among others. The modes are int: 1 always, 2 auto, 3 never. task_mode_delay,
             gpu_mode_delay and network_mode_delay are the seconds left of a temporary mode, as
-            float, and 0 without one.
+            float, and 0 without one. ams_password_error, disallow_attach and simple_gui_only are
+            bool, and manager_must_quit is there, True, only when an update asks the BOINC Manager
+            to quit.
         """
         req = ET.Element(Tag.GET_CC_STATUS)
         return parse_generic(await self._request(req))
