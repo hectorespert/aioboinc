@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.0
 
 - **Fixed** `get_disk_usage()` leaving out the totals of the disk. It returned only the usage of
   each project, under `project`; it now returns `d_total`, `d_free`, `d_boinc` and `d_allowed`
