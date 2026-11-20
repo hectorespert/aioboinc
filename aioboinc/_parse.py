@@ -272,6 +272,14 @@ def parse_generic(e: ET.Element):
 
 
 class Project:
+    """
+    A project the BOINC client is attached to, from get_project_status(), or the project of a task
+
+    Its fields are attributes, such as project_name or user_total_credit; a project of a task has
+    only master_url. It compares equal, and hashes the same, as its master URL, so either can look
+    the other up in a set or a dict.
+    """
+
     master_url: str
 
     def __init__(self, *args, **kwargs):

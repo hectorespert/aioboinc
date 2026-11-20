@@ -45,10 +45,7 @@ PASSWORD_BOINC = "example_password"
 
 
 async def main():
-    # Every error is a BOINCError. A host that cannot be reached, or that stops answering, raises
-    # BOINCConnectionError; one that takes more than 30 seconds to answer, its subclass
-    # BOINCTimeoutError. Pass timeout= to change it, or timeout=None to wait forever. A request
-    # that BOINC answers with an error, such as a task that does not exist, raises BOINCCommandError.
+    # A host that cannot be reached raises BOINCConnectionError. See Errors below for the rest.
     rpc_client = await init_rpc_client(IP_BOINC, PASSWORD_BOINC)
     try:
         # Connecting does not authenticate. Do it before anything else: without it BOINC refuses
@@ -84,6 +81,77 @@ async def main():
 
 asyncio.run(main())
 ```
+
+## Methods
+
+`init_rpc_client(host, password=None, port=31416, timeout=30.0)` connects to the BOINC client on
+`host` and returns an `RPCClient`. `timeout` is the seconds to connect, and to get each reply
+afterwards; `None` waits forever. `password` is the one in `gui_rpc_auth.cfg`, in the BOINC data
+directory.
+
+To manage the connection:
+
+| Method | Does |
+| --- | --- |
+| `authorize(password=None)` | Authorizes the connection. Needed for the requests that change something, and for every request from another host |
+| `connect()` | Connects again, after the connection was dropped or closed. Call `authorize()` next |
+| `close()` | Closes the connection |
+| `connected` | Whether there is a connection |
+
+To read the state of the BOINC client:
+
+| Method | Returns |
+| --- | --- |
+| `exchange_versions()` | The version of the BOINC client, as a dict with `major`, `minor` and `release` |
+| `get_cc_status()` | Its modes, why it is suspended, and the state of its network, as a dict |
+| `get_disk_usage()` | The disk space each project uses, under `project`, and the totals of the disk, in bytes |
+| `get_file_transfers()` | A list of the uploads and downloads |
+| `get_host_info()` | The description of the host: CPU, memory, disk, operating system, GPUs |
+| `get_message_count()` | The sequence number of the newest message of the event log |
+| `get_messages(seqno=0, translatable=False)` | A list of the messages newer than `seqno` |
+| `get_project_status()` | A list of the projects, as `Project` objects that compare equal to their URL |
+| `get_results(active_only=False)` | A list of the tasks; only the started ones with `active_only=True` |
+
+The replies are dicts and lists keyed by the names of the elements BOINC sends, described in the
+[protocol](https://boinc.berkeley.edu/trac/wiki/GuiRpcProtocol#RequestsandReplies). Numbers come
+as `int` or `float`, flags as `bool`, times as naive `datetime` in local time, and durations as
+`timedelta`.
+
+To control it, after `authorize()`. Each returns `True` when BOINC answers with success:
+
+| Method | Does |
+| --- | --- |
+| `suspend_result(project_url, name)` | Suspends a task. `project_url` and `name` are those of a task from `get_results()` |
+| `resume_result(project_url, name)` | Resumes a suspended task |
+| `abort_result(project_url, name)` | Aborts a task. It cannot be undone |
+| `set_run_mode(mode, duration=0)` | Sets when BOINC computes: `Mode.ALWAYS`, `Mode.AUTO`, `Mode.NEVER`, or `Mode.RESTORE` to end a temporary mode. A `duration` in seconds makes it temporary |
+| `set_gpu_mode(mode, duration=0)` | The same for the GPU |
+| `set_network_mode(mode, duration=0)` | The same for the network |
+| `network_available()` | Retries now the network communication BOINC has deferred |
+| `set_language(language)` | Sets the language BOINC sends to the projects, such as `"es"` |
+| `quit()` | Stops the BOINC client on the host |
+
+Each method has a docstring with the details: `help(RPCClient.get_disk_usage)`.
+
+## Errors
+
+Every error is a `BOINCError`, and all of them can be imported from `aioboinc`:
+
+| Error | Raised when | The connection |
+| --- | --- | --- |
+| `BOINCAuthError` | The password is wrong or missing, or the request needs `authorize()` first | Is kept, except when BOINC rejects the password |
+| `BOINCCommandError` | BOINC answers the request with an error, such as `no such result` | Is kept |
+| `BOINCConnectionError` | The host cannot be reached, or the connection is lost | Is dropped |
+| `BOINCTimeoutError` | The host does not answer within the timeout | Is dropped |
+| `BOINCProtocolError` | What answers is not a BOINC client: its reply is not XML, is empty, or is not the one `authorize()` expects | Is dropped |
+
+`BOINCTimeoutError` and `BOINCProtocolError` are also `BOINCConnectionError`, so catching that one
+covers every lost connection. `BOINCConnectionError` is also a `ConnectionError`, and
+`BOINCTimeoutError` a `TimeoutError`. `BOINCClientError` is another name for `BOINCError`, kept
+from before 0.4.0.
+
+When the connection is dropped, `connected` is `False`: call `connect()` and `authorize()` again
+to go on.
 
 ## Development
 
