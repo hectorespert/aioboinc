@@ -114,10 +114,10 @@ To read the state of the BOINC client:
 
 The replies are dicts and lists keyed by the names of the elements BOINC sends, described in the
 [protocol](https://boinc.berkeley.edu/trac/wiki/GuiRpcProtocol#RequestsandReplies). Numbers come
-as `int` or `float`, flags as `bool`, times as naive `datetime` in local time, and the CPU and
-elapsed times of a task as `timedelta`. Other durations, such as the `*_mode_delay` of
-`get_cc_status()`, are `float` seconds. The type depends on the element, and an element the parser
-does not know comes as a `str`.
+as `int` or `float`, flags as `bool`, times as `datetime` in UTC, and the CPU and elapsed times of
+a task as `timedelta`. Other durations, such as the `*_mode_delay` of `get_cc_status()`, are
+`float` seconds. The type depends on the element, and an element the parser does not know comes as
+a `str`.
 
 To control it, after `authorize()`. Each returns `True` when BOINC answers with success:
 

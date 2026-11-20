@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from xml.etree import ElementTree as ET
 
@@ -230,7 +230,10 @@ FLOAT_TAG_PARSER = float
 
 
 def TIME_TAG_PARSER(x: str) -> datetime:
-    return datetime.fromtimestamp(float(x))
+    # BOINC sends a time as seconds since the epoch, which name an instant whatever the time zone.
+    # Without a tzinfo it would be read in the time zone of the host running this client, which
+    # need not be the one of the host running BOINC, and could not be compared with an aware time.
+    return datetime.fromtimestamp(float(x), UTC)
 
 
 def TIMEDELTA_TAG_PARSER(x: str) -> timedelta:

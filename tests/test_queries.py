@@ -4,7 +4,7 @@ Tests for the requests that read from the BOINC client
 The replies are the ones in fixtures/web_state.py, captured from a real client.
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from aioboinc._parse import Project
 
@@ -143,7 +143,7 @@ class MessagesTest(RPCClientTestCase):
         self.assertEqual(
             first["body"], "Starting BOINC client version 7.16.3 for x86_64-suse-linux-gnu"
         )
-        self.assertEqual(first["time"], datetime.fromtimestamp(1586722353))
+        self.assertEqual(first["time"], datetime(2020, 4, 12, 20, 12, 33, tzinfo=UTC))
 
     async def test_a_message_from_the_client_itself_has_no_project(self):
         messages = await self.client.get_messages()
@@ -175,7 +175,11 @@ class ProjectStatusTest(RPCClientTestCase):
     async def test_the_priority_is_a_number_and_the_download_time_a_time(self):
         project = (await self.client.get_project_status())[0]
         self.assertEqual(project.sched_priority, 0.0)
-        self.assertEqual(project.project_files_downloaded_time, datetime.fromtimestamp(0))
+        self.assertEqual(project.project_files_downloaded_time, datetime(1970, 1, 1, tzinfo=UTC))
+
+    async def test_a_time_is_in_utc(self):
+        project = (await self.client.get_project_status())[1]
+        self.assertIs(project.last_rpc_time.tzinfo, UTC)
 
     async def test_counters_that_look_like_flags_are_numbers(self):
         project = (await self.client.get_project_status())[0]
