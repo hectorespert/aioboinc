@@ -14,13 +14,17 @@ never published to PyPI. What differs from upstream is listed in the [changelog]
 
 ### Coming from `pyboinc`
 
-The package is imported as `aioboinc`, not `pyboinc`. Nothing else changed, so moving over is a
-rename of the imports:
+The package is imported as `aioboinc`, not `pyboinc`, so moving over starts with a rename of the
+imports:
 
 ```python
 from aioboinc import init_rpc_client
 from aioboinc.rpc_client import Mode
 ```
+
+Since 0.4.0 errors are raised rather than returned. `authorize()` raises `BOINCAuthError` for a
+wrong password instead of returning `False`, and so does a request that needs it first. The
+[changelog](CHANGELOG.md) lists the rest.
 
 ## Installation
 

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.0
 
 - **Changed** the minimum Python version to 3.11. Python 3.10 reached its end of life in October
   2026, and Home Assistant needs 3.13 or later.
