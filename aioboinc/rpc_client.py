@@ -92,7 +92,7 @@ class RPCClient:
     Every request raises:
         BOINCAuthError: The request needs authorize() first. The connection is kept.
         BOINCCommandError: BOINC answered with an error, such as "no such result". The connection
-            is kept.
+            is kept, except in authorize().
         BOINCConnectionError: The connection could not be used or was lost, or the reply was not
             one (BOINCProtocolError) or did not come in time (BOINCTimeoutError). The connection
             is dropped: connect() and authorize() again to go on.
@@ -163,8 +163,10 @@ class RPCClient:
             BOINCAuthError: There is no password, and the connection is kept; or BOINC rejected
                 it, and the connection is dropped, since BOINC hangs up then: connect() again
                 before trying another.
-            BOINCConnectionError: As for any request. The connection is dropped, as it is when
-                anything else stops authorize() half way.
+            BOINCCommandError: BOINC answered the first step with an error. The connection is
+                dropped, as it is whenever authorize() stops half way, since BOINC hangs up on a
+                second try on the same one: connect() again before retrying.
+            BOINCConnectionError: As for any request. The connection is dropped.
         """
         # Both steps in one turn, so no other request takes the reply to either of them. The
         # password is chosen inside it too, so a call waiting for its turn cannot change it.
@@ -350,7 +352,8 @@ class RPCClient:
         Get the tasks
 
         Args:
-            active_only: Only the tasks BOINC has started, leaving out those waiting to start.
+            active_only: Only the tasks BOINC has started and that have not finished, leaving out
+                those waiting to start and those done.
 
         Returns:
             A list with a dict for each task, [] when there is none, with name, project_url,

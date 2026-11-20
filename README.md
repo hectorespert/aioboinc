@@ -110,7 +110,7 @@ To read the state of the BOINC client:
 | `get_message_count()` | The sequence number of the newest message of the event log |
 | `get_messages(seqno=0, translatable=False)` | A list of the messages newer than `seqno` |
 | `get_project_status()` | A list of the projects, as `Project` objects that compare equal to their URL |
-| `get_results(active_only=False)` | A list of the tasks; only the started ones with `active_only=True` |
+| `get_results(active_only=False)` | A list of the tasks; with `active_only=True`, only those started and not finished |
 
 The replies are dicts and lists keyed by the names of the elements BOINC sends, described in the
 [protocol](https://boinc.berkeley.edu/trac/wiki/GuiRpcProtocol#RequestsandReplies). Numbers come
@@ -140,7 +140,7 @@ Every error is a `BOINCError`, and all of them can be imported from `aioboinc`:
 | Error | Raised when | The connection |
 | --- | --- | --- |
 | `BOINCAuthError` | The password is wrong or missing, or the request needs `authorize()` first | Is kept, except when BOINC rejects the password |
-| `BOINCCommandError` | BOINC answers the request with an error, such as `no such result` | Is kept |
+| `BOINCCommandError` | BOINC answers the request with an error, such as `no such result` | Is kept, except in `authorize()` |
 | `BOINCConnectionError` | The host cannot be reached, or the connection is lost | Is dropped |
 | `BOINCTimeoutError` | The host does not answer within the timeout | Is dropped |
 | `BOINCProtocolError` | What answers is not a BOINC client: its reply is not XML, is empty, or is not the one `authorize()` expects | Is dropped |
