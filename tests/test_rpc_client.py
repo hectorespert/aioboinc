@@ -3,13 +3,24 @@ Tests for connecting, authorizing, changing modes and closing
 """
 
 import asyncio
+import errno
+import socket
 import unittest
 from hashlib import md5
 from unittest import mock
 
-from aioboinc.rpc_client import BOINCClientError, Mode, RPCClient
+from aioboinc import (
+    BOINCAuthError,
+    BOINCClientError,
+    BOINCCommandError,
+    BOINCConnectionError,
+    BOINCError,
+    BOINCProtocolError,
+    BOINCTimeoutError,
+)
+from aioboinc.rpc_client import Mode, RPCClient
 
-from .fake_boinc import NO_REPLY, Late, RPCClientTestCase
+from .fake_boinc import HANG_UP, NO_REPLY, Late, RPCClientTestCase
 from .fixtures import web_state
 
 
@@ -64,10 +75,12 @@ class AuthorizeTest(RPCClientTestCase):
         )
         self.assertEqual(self.client.password, "other")
 
-    async def test_without_a_password_sends_nothing(self):
+    async def test_without_a_password_raises_and_sends_nothing(self):
         self.client.password = None
-        self.assertIs(await self.client.authorize(), False)
+        with self.assertRaisesRegex(BOINCAuthError, "No password"):
+            await self.client.authorize()
         self.assertEqual(self.boinc.requests, [])
+        self.assertTrue(self.client.connected)
 
 
 class RejectedAuthorizeTest(RPCClientTestCase):
@@ -75,18 +88,92 @@ class RejectedAuthorizeTest(RPCClientTestCase):
     replies = (
         "<boinc_gui_rpc_reply><nonce>1234.5678</nonce></boinc_gui_rpc_reply>",
         "<boinc_gui_rpc_reply><unauthorized/></boinc_gui_rpc_reply>",
+        "<boinc_gui_rpc_reply><nonce>1</nonce></boinc_gui_rpc_reply>",
+        "<boinc_gui_rpc_reply><authorized/></boinc_gui_rpc_reply>",
     )
 
-    async def test_wrong_password_returns_false(self):
-        self.assertIs(await self.client.authorize(), False)
+    async def test_wrong_password_raises_auth_error(self):
+        with self.assertRaisesRegex(BOINCAuthError, "127.0.0.1 rejected the password"):
+            await self.client.authorize()
+
+    async def test_wrong_password_drops_the_connection(self):
+        # BOINC hangs up after it, so the next try needs a new connection
+        with self.assertRaises(BOINCAuthError):
+            await self.client.authorize()
+        self.assertFalse(self.client.connected)
+        await asyncio.wait_for(self.boinc.disconnected.wait(), timeout=5)
+        await self.client.connect()
+        self.assertIs(await self.client.authorize("right"), True)
+
+
+class UnencodablePasswordTest(RPCClientTestCase):
+
+    replies = (
+        "<boinc_gui_rpc_reply><nonce>1</nonce></boinc_gui_rpc_reply>",
+        "<boinc_gui_rpc_reply><nonce>2</nonce></boinc_gui_rpc_reply>",
+        "<boinc_gui_rpc_reply><authorized/></boinc_gui_rpc_reply>",
+    )
+
+    async def test_a_failure_after_auth1_drops_the_connection(self):
+        # A lone surrogate cannot be encoded, so this fails after auth1, before auth2
+        with self.assertRaises(UnicodeEncodeError):
+            await self.client.authorize("\ud800")
+        self.assertFalse(self.client.connected)
+        await self.client.connect()
+        self.assertIs(await self.client.authorize("right"), True)
+
+
+class Auth1ErrorTest(RPCClientTestCase):
+
+    replies = ("<boinc_gui_rpc_reply><error>no</error></boinc_gui_rpc_reply>",)
+
+    async def test_an_error_instead_of_the_nonce_raises(self):
+        with self.assertRaisesRegex(BOINCCommandError, "no"):
+            await self.client.authorize()
+        self.assertFalse(self.client.connected)
+
+
+class Auth1WithoutNonceTest(RPCClientTestCase):
+
+    replies = ("<boinc_gui_rpc_reply><nonce/></boinc_gui_rpc_reply>",)
+
+    async def test_a_reply_without_the_nonce_raises(self):
+        with self.assertRaisesRegex(BOINCProtocolError, "did not answer auth1 with a nonce"):
+            await self.client.authorize()
+        self.assertFalse(self.client.connected)
+
+
+class Auth2UnexpectedTest(RPCClientTestCase):
+
+    replies = (
+        "<boinc_gui_rpc_reply><nonce>1</nonce></boinc_gui_rpc_reply>",
+        "<boinc_gui_rpc_reply><success/></boinc_gui_rpc_reply>",
+    )
+
+    async def test_a_reply_other_than_authorized_raises(self):
+        with self.assertRaisesRegex(BOINCProtocolError, "did not answer auth2 with authorized"):
+            await self.client.authorize()
+        self.assertFalse(self.client.connected)
 
 
 class UnauthorizedTest(RPCClientTestCase):
 
     replies = ("<boinc_gui_rpc_reply><unauthorized/></boinc_gui_rpc_reply>",)
 
-    async def test_control_request_returns_false(self):
-        self.assertIs(await self.client.set_run_mode(Mode.NEVER), False)
+    async def test_control_request_raises_auth_error(self):
+        with self.assertRaisesRegex(BOINCAuthError, "call authorize"):
+            await self.client.set_run_mode(Mode.NEVER)
+
+    async def test_query_raises_auth_error(self):
+        # Instead of an empty answer
+        with self.assertRaises(BOINCAuthError):
+            await self.client.get_project_status()
+
+    async def test_the_connection_is_kept(self):
+        # BOINC lets the first refusal go, so authorize() can follow on the same connection
+        with self.assertRaises(BOINCAuthError):
+            await self.client.get_cc_status()
+        self.assertTrue(self.client.connected)
 
 
 class ErrorTest(RPCClientTestCase):
@@ -94,7 +181,7 @@ class ErrorTest(RPCClientTestCase):
     replies = ("<boinc_gui_rpc_reply><error>no such result</error></boinc_gui_rpc_reply>",)
 
     async def test_control_request_raises(self):
-        with self.assertRaisesRegex(BOINCClientError, "no such result"):
+        with self.assertRaisesRegex(BOINCCommandError, "no such result"):
             await self.client.suspend_result("https://example.org/", "task_0")
         self.assertEqual(
             self.boinc.requests,
@@ -159,7 +246,11 @@ class ConcurrentAuthorizeWithOtherPasswordsTest(RPCClientTestCase):
     )
 
     async def test_each_call_answers_with_its_own_password(self):
-        await asyncio.gather(self.client.authorize("first"), self.client.authorize("second"))
+        first, second = await asyncio.gather(
+            self.client.authorize("first"), self.client.authorize("second"), return_exceptions=True
+        )
+        self.assertIs(first, True)
+        self.assertIsInstance(second, BOINCAuthError)
         self.assertEqual(
             self.boinc.requests,
             [
@@ -178,10 +269,62 @@ class InvalidReplyTest(RPCClientTestCase):
     replies = ("<html/>",)
 
     async def test_a_reply_without_the_envelope_raises(self):
-        with self.assertRaisesRegex(ConnectionError, "invalid response"):
+        with self.assertRaisesRegex(BOINCProtocolError, "invalid reply"):
             await self.client.get_cc_status()
         # Whatever answered is not a BOINC client, so there is no point in going on talking to it
         self.assertFalse(self.client.connected)
+
+
+class EmptyReplyTest(RPCClientTestCase):
+
+    # What BOINC sends before hanging up on an auth1 it did not expect
+    replies = ("<boinc_gui_rpc_reply>\n</boinc_gui_rpc_reply>",)
+
+    async def test_an_empty_reply_raises(self):
+        with self.assertRaisesRegex(BOINCProtocolError, "invalid reply"):
+            await self.client.get_cc_status()
+        self.assertFalse(self.client.connected)
+
+
+class MalformedReplyTest(RPCClientTestCase):
+
+    replies = ("<boinc_gui_rpc_reply><cc_status>",)
+
+    async def test_a_reply_that_is_not_xml_raises(self):
+        with self.assertRaisesRegex(BOINCProtocolError, "invalid reply"):
+            await self.client.get_cc_status()
+        self.assertFalse(self.client.connected)
+
+
+class HangUpInsteadOfReplyTest(RPCClientTestCase):
+
+    replies = (HANG_UP,)
+
+    async def test_a_host_that_hangs_up_raises_connection_error(self):
+        with self.assertRaisesRegex(BOINCConnectionError, "127.0.0.1 closed the connection"):
+            await self.client.get_cc_status()
+        self.assertFalse(self.client.connected)
+
+
+class ExceptionsTest(unittest.TestCase):
+
+    def test_every_error_is_a_boinc_error(self):
+        for error in (BOINCAuthError, BOINCCommandError, BOINCConnectionError, BOINCTimeoutError):
+            self.assertTrue(issubclass(error, BOINCError), error)
+
+    def test_the_old_name_of_the_base_still_catches_them(self):
+        self.assertIs(BOINCClientError, BOINCError)
+
+    def test_a_reply_that_is_not_from_boinc_is_a_connection_error(self):
+        # So that whoever only tells auth from connection errors gets it right too
+        self.assertTrue(issubclass(BOINCProtocolError, BOINCConnectionError))
+        self.assertFalse(issubclass(BOINCProtocolError, TimeoutError))
+
+    def test_connection_and_timeout_errors_are_the_builtin_ones_too(self):
+        self.assertTrue(issubclass(BOINCConnectionError, ConnectionError))
+        self.assertTrue(issubclass(BOINCTimeoutError, BOINCConnectionError))
+        self.assertTrue(issubclass(BOINCTimeoutError, TimeoutError))
+        self.assertTrue(issubclass(BOINCTimeoutError, asyncio.TimeoutError))
 
 
 class TimeoutTest(RPCClientTestCase):
@@ -190,7 +333,7 @@ class TimeoutTest(RPCClientTestCase):
     replies = (Late(web_state.seqno, 0.5), web_state.cc_status)
 
     async def test_a_late_reply_raises_timeout_error(self):
-        with self.assertRaisesRegex(TimeoutError, "127.0.0.1 did not reply within 0.1 seconds"):
+        with self.assertRaisesRegex(BOINCTimeoutError, "127.0.0.1 did not reply within 0.1 seconds"):
             await self.client.get_message_count()
         self.assertFalse(self.client.connected)
 
@@ -247,9 +390,60 @@ class ConnectTimeoutTest(unittest.IsolatedAsyncioTestCase):
         client = RPCClient("192.0.2.1", timeout=0.1)
         with (
             mock.patch("asyncio.open_connection", never_connects),
-            self.assertRaisesRegex(TimeoutError, "connect to 192.0.2.1 within 0.1 seconds"),
+            self.assertRaisesRegex(BOINCTimeoutError, "connect to 192.0.2.1 within 0.1 seconds"),
         ):
             await client.connect()
+        self.assertFalse(client.connected)
+
+
+class SystemTimeoutTest(unittest.IsolatedAsyncioTestCase):
+    """
+    The system giving up on a connection raises a TimeoutError too, which is not the client's
+    timeout running out
+    """
+
+    async def test_connecting_raises_connection_error(self):
+        async def system_gives_up(*args, **kwargs):
+            raise OSError(errno.ETIMEDOUT, "Connection timed out")
+
+        client = RPCClient("192.0.2.1", timeout=None)
+        with (
+            mock.patch("asyncio.open_connection", system_gives_up),
+            self.assertRaisesRegex(BOINCConnectionError, "Could not connect to 192.0.2.1") as caught,
+        ):
+            await client.connect()
+        self.assertNotIsInstance(caught.exception, BOINCTimeoutError)
+        self.assertEqual(caught.exception.__cause__.errno, errno.ETIMEDOUT)
+
+
+class SystemTimeoutOnRequestTest(RPCClientTestCase):
+
+    timeout = None
+
+    async def test_a_request_raises_connection_error(self):
+        async def system_gives_up(request):
+            raise OSError(errno.ETIMEDOUT, "Connection timed out")
+
+        with (
+            mock.patch.object(self.client._raw_client, "_exchange", system_gives_up),
+            self.assertRaisesRegex(BOINCConnectionError, "Lost the connection to 127.0.0.1") as caught,
+        ):
+            await self.client.get_cc_status()
+        self.assertNotIsInstance(caught.exception, BOINCTimeoutError)
+        self.assertEqual(caught.exception.__cause__.errno, errno.ETIMEDOUT)
+        self.assertFalse(self.client.connected)
+
+
+class ConnectRefusedTest(unittest.IsolatedAsyncioTestCase):
+
+    async def test_a_port_nobody_listens_on_raises_connection_error(self):
+        with socket.socket() as s:
+            s.bind(("127.0.0.1", 0))
+            port = s.getsockname()[1]
+        client = RPCClient("127.0.0.1", port=port)
+        with self.assertRaisesRegex(BOINCConnectionError, "Could not connect to 127.0.0.1") as caught:
+            await client.connect()
+        self.assertIsInstance(caught.exception.__cause__, ConnectionRefusedError)
         self.assertFalse(client.connected)
 
 
@@ -284,7 +478,7 @@ class CloseTest(RPCClientTestCase):
 
     async def test_request_after_close_raises(self):
         await self.client.close()
-        with self.assertRaises(ConnectionError):
+        with self.assertRaises(BOINCConnectionError):
             await self.client.get_cc_status()
 
     async def test_can_connect_again_after_close(self):
@@ -310,6 +504,10 @@ class HungUpTest(RPCClientTestCase):
     async def test_the_client_is_no_longer_connected(self):
         self.assertFalse(self.client.connected)
 
+    async def test_a_request_raises_connection_error(self):
+        with self.assertRaises(BOINCConnectionError):
+            await self.client.get_cc_status()
+
     async def test_connect_opens_a_new_connection(self):
         old = self.client._raw_client._writer
         await self.client.connect()
@@ -330,11 +528,11 @@ class NeverConnectedTest(unittest.IsolatedAsyncioTestCase):
         await RPCClient("127.0.0.1").close()
 
     async def test_request_raises(self):
-        with self.assertRaises(ConnectionError):
+        with self.assertRaisesRegex(BOINCConnectionError, "not opened before writing"):
             await RPCClient("127.0.0.1").get_cc_status()
 
     async def test_receiving_raises(self):
-        with self.assertRaises(ConnectionError):
+        with self.assertRaisesRegex(BOINCConnectionError, "not opened before reading"):
             await RPCClient("127.0.0.1")._raw_client.receive()
 
 

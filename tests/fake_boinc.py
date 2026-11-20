@@ -17,6 +17,8 @@ ENCODING = "ISO-8859-1"
 SUCCESS = "<boinc_gui_rpc_reply><success/></boinc_gui_rpc_reply>"
 # A reply that never comes
 NO_REPLY = None
+# No reply, and the connection closed, as BOINC does when it refuses one
+HANG_UP = object()
 
 
 class Late:
@@ -83,6 +85,8 @@ class FakeBoinc:
                 reply = self.replies.pop(0) if self.replies else self.default
                 if reply is NO_REPLY:
                     continue
+                if reply is HANG_UP:
+                    break
                 if isinstance(reply, Late):
                     await asyncio.sleep(reply.seconds)
                     reply = reply.reply

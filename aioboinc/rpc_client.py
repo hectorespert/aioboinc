@@ -11,10 +11,9 @@ from hashlib import md5
 from ._parse import Project, parse_generic
 from ._raw_client import DEFAULT_TIMEOUT, GUI_RPC_DEFAULT_PORT, _RPCClientRaw
 from ._tag import Tag
+from .exceptions import BOINCAuthError, BOINCClientError, BOINCCommandError, BOINCProtocolError
 
-
-class BOINCClientError(Exception):
-    pass
+__all__ = ["BOINCClientError", "Mode", "RPCClient", "init_rpc_client"]
 
 
 class Mode(Enum):
@@ -31,7 +30,7 @@ async def init_rpc_client(
 ):
     """
     Creates RPC Client and initiates connection to RPC Server
-    timeout is the seconds to connect, and to get each reply, before raising TimeoutError.
+    timeout is the seconds to connect, and to get each reply, before raising BOINCTimeoutError.
     None waits forever.
     """
     c = RPCClient(host, password, port, timeout)
@@ -88,6 +87,9 @@ class RPCClient:
         """
         Authenticate at the server with given password
         if no password provided, use previous password or password from initialization
+        Returns True. Raises BOINCAuthError if there is no password, keeping the connection, or if the
+        server rejects it. The server hangs up then, so the connection is dropped, as it is when
+        anything else stops the two steps half way: connect() again before trying another password.
         """
         # Both steps in one turn, so no other request takes the reply to either of them. The
         # password is chosen inside it too, so a call waiting for its turn cannot change it.
@@ -95,40 +97,61 @@ class RPCClient:
             if password is not None:
                 self.password = password
             if self.password is None:
-                return False
-            password = self.password
-            auth1 = ET.Element(Tag.AUTH1)
-            nonce = (await self._raw_client.request(auth1)).text
-            auth2 = ET.Element(Tag.AUTH2)
-            nonce_hash = ET.SubElement(auth2, Tag.NONCE_HASH)
-            salted = nonce + password
-            nonce_hash.text = md5(bytes(salted, encoding="UTF8")).hexdigest()
-            return (await self._raw_client.request(auth2)).tag == Tag.AUTHORIZED
+                raise BOINCAuthError(f"No password to authorize at {self._raw_client.host} with")
+            try:
+                return await self._authorize(self.password)
+            except BaseException:
+                # The server hangs up after a failed authorization, and after a second auth1. So
+                # whatever stops the two steps half way, the next try needs a new connection.
+                self._raw_client._abort()
+                raise
+
+    async def _authorize(self, password: str):
+        host = self._raw_client.host
+        nonce = self._check_reply(await self._raw_client.request(ET.Element(Tag.AUTH1)))
+        if nonce.tag != Tag.NONCE or nonce.text is None:
+            raise BOINCProtocolError(f"{host} did not answer auth1 with a nonce")
+        auth2 = ET.Element(Tag.AUTH2)
+        nonce_hash = ET.SubElement(auth2, Tag.NONCE_HASH)
+        salted = nonce.text + password
+        nonce_hash.text = md5(bytes(salted, encoding="UTF8")).hexdigest()
+        reply = await self._raw_client.request(auth2)
+        if reply.tag == Tag.UNAUTHORIZED:
+            raise BOINCAuthError(f"{host} rejected the password")
+        if self._check_reply(reply).tag != Tag.AUTHORIZED:
+            raise BOINCProtocolError(f"{host} did not answer auth2 with authorized")
+        return True
 
     async def _request(self, req: ET.Element):
+        """
+        Raises BOINCAuthError if the server refuses the request for want of authorize(), and
+        BOINCCommandError if it answers with an error
+        """
         async with self._lock:
-            return await self._raw_client.request(req)
+            reply = await self._raw_client.request(req)
+        return self._check_reply(reply)
+
+    @staticmethod
+    def _check_reply(reply: ET.Element) -> ET.Element:
+        if reply.tag == Tag.UNAUTHORIZED:
+            raise BOINCAuthError("Not authorized: call authorize() with the right password first")
+        elif reply.tag == Tag.ERROR:
+            raise BOINCCommandError(reply.text)
+        return reply
 
     async def _request_auth(self, req: ET.Element):
         """
         Returns:
             True if answer was a single "success" tag
-            False if answer was a single "unauthorized" tag
             The reply if answer was a non-trivial reply
-        Raises a BOINCClientError on error
+        Raises BOINCAuthError if answer was a single "unauthorized" tag, and BOINCCommandError on
+        error
         """
         return self.evaluate_reply(await self._request(req))
 
     @staticmethod
     def evaluate_reply(reply: ET.Element):
-        if reply.tag == Tag.UNAUTHORIZED:
-            return False
-        elif reply.tag == Tag.ERROR:
-            raise BOINCClientError(reply.text)
-        elif reply.tag == Tag.SUCCESS:
-            return True
-        else:
-            return reply
+        return True if RPCClient._check_reply(reply).tag == Tag.SUCCESS else reply
 
     async def exchange_versions(self):
         req = ET.Element(Tag.EXCHANGE_VERSIONS)
