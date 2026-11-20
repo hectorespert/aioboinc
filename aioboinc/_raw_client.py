@@ -13,7 +13,7 @@ import contextlib
 import xml.etree.ElementTree as ET
 from socket import AF_INET
 
-from .exceptions import BOINCClientError, BOINCConnectionError, BOINCTimeoutError
+from .exceptions import BOINCConnectionError, BOINCError, BOINCProtocolError, BOINCTimeoutError
 
 GUI_RPC_DEFAULT_PORT = 31416
 # Seconds to connect, or to get the reply to a request, before giving up
@@ -119,14 +119,15 @@ class _RPCClientRaw:
         # and parse xml
         resp_e = ET.fromstring(resp)
         if resp_e.tag != REPLY_TAG or len(resp_e) == 0:
-            raise BOINCConnectionError(f"Got an invalid reply from {self.host}")
+            raise BOINCProtocolError(f"Got an invalid reply from {self.host}")
         return resp_e[0]
 
     async def request(self, request: ET.Element):
         """
         Send request to server and return reply
         Raises BOINCTimeoutError if the reply takes longer than the timeout, and
-        BOINCConnectionError if the connection is lost or the reply is not one. If the exchange does
+        BOINCConnectionError if the connection is lost, or its subclass BOINCProtocolError if the
+        reply is not one. If the exchange does
         not finish, for those or any other reason, the connection is dropped: the reply may still be
         on its way, and the next request would read it as its own.
         """
@@ -137,7 +138,7 @@ class _RPCClientRaw:
             raise BOINCTimeoutError(
                 f"{self.host} did not reply within {self.timeout} seconds"
             ) from None
-        except BOINCClientError:
+        except BOINCError:
             self._abort()
             raise
         except EOFError as err:
@@ -145,7 +146,7 @@ class _RPCClientRaw:
             raise BOINCConnectionError(f"{self.host} closed the connection") from err
         except (ET.ParseError, asyncio.LimitOverrunError) as err:
             self._abort()
-            raise BOINCConnectionError(f"Got an invalid reply from {self.host}") from err
+            raise BOINCProtocolError(f"Got an invalid reply from {self.host}") from err
         except OSError as err:
             self._abort()
             raise BOINCConnectionError(f"Lost the connection to {self.host}: {err}") from err

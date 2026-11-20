@@ -1,20 +1,36 @@
 """
 Exceptions raised by the client
-Every one of them is a BOINCClientError, so catching that catches them all.
+Every one of them is a BOINCError, so catching that catches them all.
 """
 
 
-class BOINCClientError(Exception):
+class BOINCError(Exception):
     """
     Base of every error the client raises
-    Raised as is when the BOINC client answers a request with an error
     """
 
 
-class BOINCConnectionError(BOINCClientError, ConnectionError):
+# The name the base had before there were others under it, kept so that code catching it goes on
+# working.
+BOINCClientError = BOINCError
+
+
+class BOINCAuthError(BOINCError):
     """
-    The BOINC client could not be reached, the connection was lost, or what answered is not a
-    BOINC client
+    The password is wrong or missing, or the request needs authorize() first
+    """
+
+
+class BOINCCommandError(BOINCError):
+    """
+    The BOINC client answered the request with an error, such as "no such result"
+    The connection is kept.
+    """
+
+
+class BOINCConnectionError(BOINCError, ConnectionError):
+    """
+    The BOINC client could not be reached, or the connection was lost
     The connection is dropped: connect() and authorize() again to go on.
     """
 
@@ -25,7 +41,8 @@ class BOINCTimeoutError(BOINCConnectionError, TimeoutError):
     """
 
 
-class BOINCAuthError(BOINCClientError):
+class BOINCProtocolError(BOINCConnectionError):
     """
-    The password is wrong or missing, or the request needs authorize() first
+    What answered does not speak the GUI RPC protocol as a BOINC client does: the reply is not XML,
+    is empty, or is not the one expected
     """

@@ -11,7 +11,7 @@ from hashlib import md5
 from ._parse import Project, parse_generic
 from ._raw_client import DEFAULT_TIMEOUT, GUI_RPC_DEFAULT_PORT, _RPCClientRaw
 from ._tag import Tag
-from .exceptions import BOINCAuthError, BOINCClientError, BOINCConnectionError
+from .exceptions import BOINCAuthError, BOINCClientError, BOINCCommandError, BOINCError, BOINCProtocolError
 
 __all__ = ["BOINCClientError", "Mode", "RPCClient", "init_rpc_client"]
 
@@ -99,7 +99,7 @@ class RPCClient:
                 raise BOINCAuthError(f"No password to authorize at {self._raw_client.host} with")
             try:
                 return await self._authorize(self.password)
-            except BOINCClientError:
+            except BOINCError:
                 # The server hangs up after a failed authorization, and after a second auth1
                 self._raw_client._abort()
                 raise
@@ -108,7 +108,7 @@ class RPCClient:
         host = self._raw_client.host
         nonce = self._check_reply(await self._raw_client.request(ET.Element(Tag.AUTH1)))
         if nonce.tag != Tag.NONCE or nonce.text is None:
-            raise BOINCConnectionError(f"{host} did not answer auth1 with a nonce")
+            raise BOINCProtocolError(f"{host} did not answer auth1 with a nonce")
         auth2 = ET.Element(Tag.AUTH2)
         nonce_hash = ET.SubElement(auth2, Tag.NONCE_HASH)
         salted = nonce.text + password
@@ -117,13 +117,13 @@ class RPCClient:
         if reply.tag == Tag.UNAUTHORIZED:
             raise BOINCAuthError(f"{host} rejected the password")
         if self._check_reply(reply).tag != Tag.AUTHORIZED:
-            raise BOINCConnectionError(f"{host} did not answer auth2 with authorized")
+            raise BOINCProtocolError(f"{host} did not answer auth2 with authorized")
         return True
 
     async def _request(self, req: ET.Element):
         """
         Raises BOINCAuthError if the server refuses the request for want of authorize(), and
-        BOINCClientError if it answers with an error
+        BOINCCommandError if it answers with an error
         """
         async with self._lock:
             reply = await self._raw_client.request(req)
@@ -134,7 +134,7 @@ class RPCClient:
         if reply.tag == Tag.UNAUTHORIZED:
             raise BOINCAuthError("Not authorized: call authorize() with the right password first")
         elif reply.tag == Tag.ERROR:
-            raise BOINCClientError(reply.text)
+            raise BOINCCommandError(reply.text)
         return reply
 
     async def _request_auth(self, req: ET.Element):
@@ -142,7 +142,7 @@ class RPCClient:
         Returns:
             True if answer was a single "success" tag
             The reply if answer was a non-trivial reply
-        Raises BOINCAuthError if answer was a single "unauthorized" tag, and BOINCClientError on
+        Raises BOINCAuthError if answer was a single "unauthorized" tag, and BOINCCommandError on
         error
         """
         return self.evaluate_reply(await self._request(req))

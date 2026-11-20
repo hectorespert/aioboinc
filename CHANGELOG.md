@@ -5,12 +5,17 @@
 - **Changed** the minimum Python version to 3.11. Python 3.10 reached its end of life in October
   2026, and Home Assistant needs 3.13 or later.
 - **Added** exceptions of its own, importable from `aioboinc`, so that callers can tell a wrong
-  password from a host that is down. Every one of them is a `BOINCClientError`:
+  password from a host that is down. Every one of them is a `BOINCError`:
   - `BOINCAuthError`: the password is wrong or missing, or the request needs `authorize()` first.
-  - `BOINCConnectionError`: the host could not be reached, the connection was lost, or what
-    answered is not a BOINC client. It is also a `ConnectionError`.
+  - `BOINCCommandError`: BOINC answered the request with an error, such as `no such result`.
+  - `BOINCConnectionError`: the host could not be reached or the connection was lost. It is also a
+    `ConnectionError`.
   - `BOINCTimeoutError`: the host did not answer in time. It is also a `BOINCConnectionError` and
     a `TimeoutError`, so code that catches `TimeoutError` still catches it.
+  - `BOINCProtocolError`: what answered is not a BOINC client, or its reply is not the one
+    expected. It is also a `BOINCConnectionError`.
+- **Changed** the base `BOINCClientError` to be called `BOINCError`. The old name is kept as an
+  alias, so code that catches it still does, and now catches the other errors too.
 - **Changed** `authorize()` to raise `BOINCAuthError` when the password is wrong or there is none.
   It returned `False`. It still returns `True` when it succeeds. After a wrong password BOINC hangs
   up, so the connection is dropped: `connect()` again before trying another password.
@@ -21,10 +26,11 @@
   dropped on all of them. A refused connection or an unknown host raised `OSError` subclasses such
   as `ConnectionRefusedError` or `socket.gaierror`, which are now its `__cause__`; code that
   catches `OSError` or `ConnectionError` still catches them. A host that hung up before replying
-  raised `asyncio.IncompleteReadError`, and a reply that was not XML raised
-  `xml.etree.ElementTree.ParseError`.
+  raised `asyncio.IncompleteReadError`. A reply that was not XML raised
+  `xml.etree.ElementTree.ParseError`, and now raises `BOINCProtocolError`.
 - **Fixed** an error, or anything other than a nonce, in reply to the first step of `authorize()`
-  raising `TypeError`, and an empty reply raising `IndexError`.
+  raising `TypeError`. It raises `BOINCCommandError` or `BOINCProtocolError`.
+- **Fixed** an empty reply raising `IndexError`. It raises `BOINCProtocolError`.
 
 ## 0.3.0
 

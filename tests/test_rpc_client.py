@@ -8,7 +8,15 @@ import unittest
 from hashlib import md5
 from unittest import mock
 
-from aioboinc import BOINCAuthError, BOINCClientError, BOINCConnectionError, BOINCTimeoutError
+from aioboinc import (
+    BOINCAuthError,
+    BOINCClientError,
+    BOINCCommandError,
+    BOINCConnectionError,
+    BOINCError,
+    BOINCProtocolError,
+    BOINCTimeoutError,
+)
 from aioboinc.rpc_client import Mode, RPCClient
 
 from .fake_boinc import HANG_UP, NO_REPLY, Late, RPCClientTestCase
@@ -102,7 +110,7 @@ class Auth1ErrorTest(RPCClientTestCase):
     replies = ("<boinc_gui_rpc_reply><error>no</error></boinc_gui_rpc_reply>",)
 
     async def test_an_error_instead_of_the_nonce_raises(self):
-        with self.assertRaisesRegex(BOINCClientError, "no"):
+        with self.assertRaisesRegex(BOINCCommandError, "no"):
             await self.client.authorize()
         self.assertFalse(self.client.connected)
 
@@ -112,7 +120,7 @@ class Auth1WithoutNonceTest(RPCClientTestCase):
     replies = ("<boinc_gui_rpc_reply><nonce/></boinc_gui_rpc_reply>",)
 
     async def test_a_reply_without_the_nonce_raises(self):
-        with self.assertRaisesRegex(BOINCConnectionError, "did not answer auth1 with a nonce"):
+        with self.assertRaisesRegex(BOINCProtocolError, "did not answer auth1 with a nonce"):
             await self.client.authorize()
         self.assertFalse(self.client.connected)
 
@@ -125,7 +133,7 @@ class Auth2UnexpectedTest(RPCClientTestCase):
     )
 
     async def test_a_reply_other_than_authorized_raises(self):
-        with self.assertRaisesRegex(BOINCConnectionError, "did not answer auth2 with authorized"):
+        with self.assertRaisesRegex(BOINCProtocolError, "did not answer auth2 with authorized"):
             await self.client.authorize()
         self.assertFalse(self.client.connected)
 
@@ -155,7 +163,7 @@ class ErrorTest(RPCClientTestCase):
     replies = ("<boinc_gui_rpc_reply><error>no such result</error></boinc_gui_rpc_reply>",)
 
     async def test_control_request_raises(self):
-        with self.assertRaisesRegex(BOINCClientError, "no such result"):
+        with self.assertRaisesRegex(BOINCCommandError, "no such result"):
             await self.client.suspend_result("https://example.org/", "task_0")
         self.assertEqual(
             self.boinc.requests,
@@ -243,7 +251,7 @@ class InvalidReplyTest(RPCClientTestCase):
     replies = ("<html/>",)
 
     async def test_a_reply_without_the_envelope_raises(self):
-        with self.assertRaisesRegex(BOINCConnectionError, "invalid reply"):
+        with self.assertRaisesRegex(BOINCProtocolError, "invalid reply"):
             await self.client.get_cc_status()
         # Whatever answered is not a BOINC client, so there is no point in going on talking to it
         self.assertFalse(self.client.connected)
@@ -255,7 +263,7 @@ class EmptyReplyTest(RPCClientTestCase):
     replies = ("<boinc_gui_rpc_reply>\n</boinc_gui_rpc_reply>",)
 
     async def test_an_empty_reply_raises(self):
-        with self.assertRaisesRegex(BOINCConnectionError, "invalid reply"):
+        with self.assertRaisesRegex(BOINCProtocolError, "invalid reply"):
             await self.client.get_cc_status()
         self.assertFalse(self.client.connected)
 
@@ -265,7 +273,7 @@ class MalformedReplyTest(RPCClientTestCase):
     replies = ("<boinc_gui_rpc_reply><cc_status>",)
 
     async def test_a_reply_that_is_not_xml_raises(self):
-        with self.assertRaisesRegex(BOINCConnectionError, "invalid reply"):
+        with self.assertRaisesRegex(BOINCProtocolError, "invalid reply"):
             await self.client.get_cc_status()
         self.assertFalse(self.client.connected)
 
@@ -282,9 +290,17 @@ class HangUpInsteadOfReplyTest(RPCClientTestCase):
 
 class ExceptionsTest(unittest.TestCase):
 
-    def test_every_error_is_a_boinc_client_error(self):
-        for error in (BOINCAuthError, BOINCConnectionError, BOINCTimeoutError):
-            self.assertTrue(issubclass(error, BOINCClientError), error)
+    def test_every_error_is_a_boinc_error(self):
+        for error in (BOINCAuthError, BOINCCommandError, BOINCConnectionError, BOINCTimeoutError):
+            self.assertTrue(issubclass(error, BOINCError), error)
+
+    def test_the_old_name_of_the_base_still_catches_them(self):
+        self.assertIs(BOINCClientError, BOINCError)
+
+    def test_a_reply_that_is_not_from_boinc_is_a_connection_error(self):
+        # So that whoever only tells auth from connection errors gets it right too
+        self.assertTrue(issubclass(BOINCProtocolError, BOINCConnectionError))
+        self.assertFalse(issubclass(BOINCProtocolError, TimeoutError))
 
     def test_connection_and_timeout_errors_are_the_builtin_ones_too(self):
         self.assertTrue(issubclass(BOINCConnectionError, ConnectionError))
