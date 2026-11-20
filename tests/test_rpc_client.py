@@ -105,6 +105,23 @@ class RejectedAuthorizeTest(RPCClientTestCase):
         self.assertIs(await self.client.authorize("right"), True)
 
 
+class UnencodablePasswordTest(RPCClientTestCase):
+
+    replies = (
+        "<boinc_gui_rpc_reply><nonce>1</nonce></boinc_gui_rpc_reply>",
+        "<boinc_gui_rpc_reply><nonce>2</nonce></boinc_gui_rpc_reply>",
+        "<boinc_gui_rpc_reply><authorized/></boinc_gui_rpc_reply>",
+    )
+
+    async def test_a_failure_after_auth1_drops_the_connection(self):
+        # A lone surrogate cannot be encoded, so this fails after auth1, before auth2
+        with self.assertRaises(UnicodeEncodeError):
+            await self.client.authorize("\ud800")
+        self.assertFalse(self.client.connected)
+        await self.client.connect()
+        self.assertIs(await self.client.authorize("right"), True)
+
+
 class Auth1ErrorTest(RPCClientTestCase):
 
     replies = ("<boinc_gui_rpc_reply><error>no</error></boinc_gui_rpc_reply>",)

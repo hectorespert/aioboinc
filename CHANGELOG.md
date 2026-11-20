@@ -18,7 +18,9 @@
   alias, so code that catches it still does, and now catches the other errors too.
 - **Changed** `authorize()` to raise `BOINCAuthError` when the password is wrong or there is none.
   It returned `False`. It still returns `True` when it succeeds. After a wrong password BOINC hangs
-  up, so the connection is dropped: `connect()` again before trying another password.
+  up, so the connection is dropped: `connect()` again before trying another password. It is also
+  dropped when anything else stops `authorize()` between its two steps, since BOINC hangs up on a
+  second `auth1` too.
 - **Changed** a request that BOINC refuses for want of `authorize()` to raise `BOINCAuthError`.
   Control requests returned `False`, and queries returned an empty answer, such as `[]` from
   `get_project_status()`, as if there were nothing to show.

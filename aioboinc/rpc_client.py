@@ -11,7 +11,7 @@ from hashlib import md5
 from ._parse import Project, parse_generic
 from ._raw_client import DEFAULT_TIMEOUT, GUI_RPC_DEFAULT_PORT, _RPCClientRaw
 from ._tag import Tag
-from .exceptions import BOINCAuthError, BOINCClientError, BOINCCommandError, BOINCError, BOINCProtocolError
+from .exceptions import BOINCAuthError, BOINCClientError, BOINCCommandError, BOINCProtocolError
 
 __all__ = ["BOINCClientError", "Mode", "RPCClient", "init_rpc_client"]
 
@@ -99,8 +99,9 @@ class RPCClient:
                 raise BOINCAuthError(f"No password to authorize at {self._raw_client.host} with")
             try:
                 return await self._authorize(self.password)
-            except BOINCError:
-                # The server hangs up after a failed authorization, and after a second auth1
+            except BaseException:
+                # The server hangs up after a failed authorization, and after a second auth1. So
+                # whatever stops the two steps half way, the next try needs a new connection.
                 self._raw_client._abort()
                 raise
 
