@@ -29,6 +29,20 @@ class Late:
         self.seconds = seconds
 
 
+class Split:
+    """A reply sent in `pieces`, each in a write of its own"""
+
+    def __init__(self, *pieces):
+        self.pieces = pieces
+
+
+class HangUpMidway:
+    """The start of a reply, `part`, and then the connection closed"""
+
+    def __init__(self, part):
+        self.part = part
+
+
 def _unwrap(request: str) -> str:
     """Strip the request envelope, leaving the element the caller built"""
     prefix, suffix = "<boinc_gui_rpc_request>", "</boinc_gui_rpc_request>"
@@ -91,6 +105,17 @@ class FakeBoinc:
                     await asyncio.sleep(reply.seconds)
                     reply = reply.reply
                 try:
+                    if isinstance(reply, HangUpMidway):
+                        writer.write(bytes(reply.part, encoding=ENCODING))
+                        await writer.drain()
+                        break
+                    if isinstance(reply, Split):
+                        *pieces, reply = reply.pieces
+                        for piece in pieces:
+                            writer.write(bytes(piece, encoding=ENCODING))
+                            await writer.drain()
+                            # Give the client time to read each piece on its own
+                            await asyncio.sleep(0.05)
                     writer.write(bytes(reply, encoding=ENCODING) + END_OF_MESSAGE)
                     await writer.drain()
                 except ConnectionError:

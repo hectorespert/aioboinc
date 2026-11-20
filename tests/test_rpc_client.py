@@ -20,7 +20,7 @@ from aioboinc import (
 )
 from aioboinc.rpc_client import Mode, RPCClient
 
-from .fake_boinc import HANG_UP, NO_REPLY, Late, RPCClientTestCase
+from .fake_boinc import HANG_UP, NO_REPLY, HangUpMidway, Late, RPCClientTestCase, Split
 from .fixtures import web_state
 
 
@@ -304,6 +304,34 @@ class HangUpInsteadOfReplyTest(RPCClientTestCase):
         with self.assertRaisesRegex(BOINCConnectionError, "127.0.0.1 closed the connection"):
             await self.client.get_cc_status()
         self.assertFalse(self.client.connected)
+
+
+class HangUpMidwayTest(RPCClientTestCase):
+
+    replies = (HangUpMidway("<boinc_gui_rpc_reply><cc_status><task_mode>2</task_mode>"),)
+
+    async def test_a_host_that_hangs_up_in_the_middle_of_a_reply_raises_connection_error(self):
+        with self.assertRaisesRegex(BOINCConnectionError, "127.0.0.1 closed the connection"):
+            await self.client.get_cc_status()
+        self.assertFalse(self.client.connected)
+
+
+class SplitReplyTest(RPCClientTestCase):
+
+    # The end of message character comes on its own, last
+    replies = (
+        Split(
+            "<boinc_gui_rpc_reply><cc_status><task_mode>2</task_mode>",
+            "<gpu_mode>3</gpu_mode></cc_status></boinc_gui_rpc_reply>",
+            "",
+        ),
+    )
+
+    async def test_a_reply_that_comes_in_pieces_is_read_whole(self):
+        status = await self.client.get_cc_status()
+        self.assertEqual(status["task_mode"], 2)
+        self.assertEqual(status["gpu_mode"], 3)
+        self.assertTrue(self.client.connected)
 
 
 class ExceptionsTest(unittest.TestCase):

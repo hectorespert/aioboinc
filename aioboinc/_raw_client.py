@@ -105,13 +105,15 @@ class _RPCClientRaw:
     async def _write(self, message: bytes):
         if self._writer is None:
             raise BOINCConnectionError(f"Connection to {self.host} was not opened before writing")
-        await self._writer.drain()
         self._writer.write(message + END_OF_MESSAGE)
+        # Wait while the buffer is full, as asyncio asks after a write. It also raises if the
+        # connection is lost.
+        await self._writer.drain()
 
     async def send(self, request: ET.Element):
         """
         Send request to RPC server
-        Returns without guarantee of having finished sending
+        Returns once the request is written; the system may still be sending it
         """
         req = ET.Element(REQUEST_TAG)
         req.append(request)
@@ -119,7 +121,7 @@ class _RPCClientRaw:
         req_str = req_str.replace(b" />", b"/>")
         await self._write(req_str)
 
-    async def _read(self):
+    async def _read(self) -> bytes:
         if self._reader is None:
             raise BOINCConnectionError(f"Connection to {self.host} was not opened before reading")
         return await self._reader.readuntil(separator=END_OF_MESSAGE)
@@ -128,14 +130,10 @@ class _RPCClientRaw:
         """
         Receive the next message by the RPC server
         """
-        buff = [await self._read()]
-        while buff[-1][-1] != END_OF_MESSAGE[0]:
-            buff.append(await self._read())
-        resp = "".join(str(b, encoding=BOINC_ENCODING) for b in buff)
-        # remove end of message chraracter
-        resp = resp[:-1]
-        # and parse xml
-        resp_e = ET.fromstring(resp)
+        # readuntil() reads the whole message, however many packets it comes in, ending with the end
+        # of message character, or raises
+        message = await self._read()
+        resp_e = ET.fromstring(str(message[:-1], encoding=BOINC_ENCODING))
         if resp_e.tag != REPLY_TAG or len(resp_e) == 0:
             raise BOINCProtocolError(f"Got an invalid reply from {self.host}")
         return resp_e[0]
