@@ -149,6 +149,30 @@ class ConcurrentAuthorizeTest(RPCClientTestCase):
         self.assertEqual(count, 47)
 
 
+class ConcurrentAuthorizeWithOtherPasswordsTest(RPCClientTestCase):
+
+    replies = (
+        "<boinc_gui_rpc_reply><nonce>1</nonce></boinc_gui_rpc_reply>",
+        "<boinc_gui_rpc_reply><authorized/></boinc_gui_rpc_reply>",
+        "<boinc_gui_rpc_reply><nonce>2</nonce></boinc_gui_rpc_reply>",
+        "<boinc_gui_rpc_reply><unauthorized/></boinc_gui_rpc_reply>",
+    )
+
+    async def test_each_call_answers_with_its_own_password(self):
+        await asyncio.gather(self.client.authorize("first"), self.client.authorize("second"))
+        self.assertEqual(
+            self.boinc.requests,
+            [
+                "<auth1/>",
+                f"<auth2><nonce_hash>{md5(b'1first').hexdigest()}</nonce_hash></auth2>",
+                "<auth1/>",
+                f"<auth2><nonce_hash>{md5(b'2second').hexdigest()}</nonce_hash></auth2>",
+            ],
+        )
+        # The last call to finish leaves its password for the next authorize() without one
+        self.assertEqual(self.client.password, "second")
+
+
 class InvalidReplyTest(RPCClientTestCase):
 
     replies = ("<html/>",)

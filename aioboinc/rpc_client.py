@@ -74,17 +74,19 @@ class RPCClient:
         Authenticate at the server with given password
         if no password provided, use previous password or password from initialization
         """
-        if password is not None:
-            self.password = password
-        if self.password is None:
-            return False
-        # Both steps in one turn, so no other request takes the reply to either of them
+        # Both steps in one turn, so no other request takes the reply to either of them. The
+        # password is chosen inside it too, so a call waiting for its turn cannot change it.
         async with self._lock:
+            if password is not None:
+                self.password = password
+            if self.password is None:
+                return False
+            password = self.password
             auth1 = ET.Element(Tag.AUTH1)
             nonce = (await self._raw_client.request(auth1)).text
             auth2 = ET.Element(Tag.AUTH2)
             nonce_hash = ET.SubElement(auth2, Tag.NONCE_HASH)
-            salted = nonce + self.password
+            salted = nonce + password
             nonce_hash.text = md5(bytes(salted, encoding="UTF8")).hexdigest()
             return (await self._raw_client.request(auth2)).tag == Tag.AUTHORIZED
 
