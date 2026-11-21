@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.0
 
 - **Fixed** flags that came as the strings `"0"` and `"1"`, because the parser did not know them:
   `manager_must_quit` of `get_cc_status()`, and `have_cal` of an AMD GPU and `have_metal` of an
