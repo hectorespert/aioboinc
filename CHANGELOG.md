@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.12.0
 
 - **Added** `get_state()`, the whole state of the BOINC client in one reply: the host, the projects
   and their apps, app versions, workunits and tasks, as a list of each kind, the network and time
