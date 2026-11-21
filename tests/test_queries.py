@@ -316,6 +316,10 @@ class HostInfoTest(RPCClientTestCase):
         self.assertEqual(info["timezone"], 7200)
         self.assertEqual(info["n_usable_coprocs"], 1)
 
+    async def test_when_the_benchmarks_ran_is_a_time(self):
+        info = await self.client.get_host_info()
+        self.assertEqual(info["p_calculated"], datetime.fromtimestamp(1586431995.189977, UTC))
+
     async def test_the_properties_of_a_gpu_are_numbers(self):
         gpu = (await self.client.get_host_info())["coprocs"][0]
         self.assertEqual(gpu["available_ram"], 4167041024.0)

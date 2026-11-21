@@ -357,6 +357,7 @@ class RPCClient:
 
         Returns:
             A dict, with domain_name, p_ncpus, p_model, m_nbytes, os_name and coprocs among others.
+            p_calculated is when the CPU benchmarks last ran, as datetime in UTC, or None if never.
             docker_type and docker_compose_type are a DockerType.
         """
         req = ET.Element(Tag.GET_HOST_INFO)
