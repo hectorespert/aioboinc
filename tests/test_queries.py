@@ -361,6 +361,62 @@ class HostInfoWithOtherCoprocessorsTest(RPCClientTestCase):
     async def test_no_coprocessors_is_an_empty_dict(self):
         await self.client.get_host_info()
         self.assertEqual((await self.client.get_host_info())["coprocs"], {})
+class HostInfoWithRepeatedElementsTest(RPCClientTestCase):
+
+    # As HOST_INFO::write() in lib/hostinfo.cpp writes them: the OpenCL properties of the CPU for
+    # each OpenCL platform, and on Windows the WSL distributions
+    replies = (
+        """<boinc_gui_rpc_reply>
+<host_info>
+    <wsl>
+        <distro>
+            <distro_name>Ubuntu</distro_name>
+            <os_name>Ubuntu</os_name>
+            <os_version>24.04</os_version>
+            <wsl_version>2</wsl_version>
+        </distro>
+        <distro>
+            <distro_name>boinc-buda-runner</distro_name>
+            <os_name>Ubuntu</os_name>
+            <os_version>22.04</os_version>
+            <wsl_version>2</wsl_version>
+            <distro_version>3</distro_version>
+        </distro>
+    </wsl>
+<opencl_cpu_prop>
+   <platform_vendor>Intel(R) Corporation</platform_vendor>
+   <opencl_cpu_info>
+      <name>Intel(R) Core(TM) i7</name>
+   </opencl_cpu_info>
+</opencl_cpu_prop>
+<opencl_cpu_prop>
+   <platform_vendor>The pocl project</platform_vendor>
+   <opencl_cpu_info>
+      <name>pthread-Intel(R) Core(TM) i7</name>
+   </opencl_cpu_info>
+</opencl_cpu_prop>
+</host_info>
+</boinc_gui_rpc_reply>
+""",
+        "<boinc_gui_rpc_reply>\n<host_info>\n    <wsl>\n    </wsl>\n</host_info>\n</boinc_gui_rpc_reply>",
+    )
+
+    async def test_every_wsl_distribution_is_there(self):
+        info = await self.client.get_host_info()
+        self.assertEqual([d["distro_name"] for d in info["wsl"]], ["Ubuntu", "boinc-buda-runner"])
+
+    async def test_every_opencl_platform_of_the_cpu_is_there(self):
+        info = await self.client.get_host_info()
+        self.assertEqual(
+            [p["platform_vendor"] for p in info["opencl_cpu_prop"]],
+            ["Intel(R) Corporation", "The pocl project"],
+        )
+
+    async def test_no_wsl_distribution_is_an_empty_list_and_no_platform_is_no_key(self):
+        await self.client.get_host_info()
+        info = await self.client.get_host_info()
+        self.assertEqual(info["wsl"], [])
+        self.assertNotIn("opencl_cpu_prop", info)
 
 
 class MessageCountTest(RPCClientTestCase):

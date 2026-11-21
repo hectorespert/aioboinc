@@ -12,6 +12,9 @@
   in `rsc_backoff_time` of a project: `NVIDIA`, `ATI`, `intel_gpu` or `apple_gpu`. The list did not
   say which kind of GPU each one was. `info["coprocs"][0]` becomes, for example,
   `info["coprocs"]["NVIDIA"]`.
+- **Fixed** `get_host_info()` keeping only the last of some elements BOINC repeats: the OpenCL
+  properties of the CPU, one for each OpenCL platform, and the WSL distributions of a Windows host.
+  `opencl_cpu_prop` and `wsl` are now a list of all of them.
 
 ## 0.11.0
 
