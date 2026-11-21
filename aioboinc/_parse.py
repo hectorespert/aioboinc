@@ -231,7 +231,6 @@ LIST_TAG = {
     Tag.PROJECTS,
     Tag.GUI_URLS,
     Tag.FILE_TRANSFERS,
-    Tag.COPROCS,
     # The WSL distributions of a Windows host, in get_host_info()
     Tag.WSL,
 }
