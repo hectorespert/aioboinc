@@ -133,6 +133,38 @@ class ClientControlTest(RPCClientTestCase):
         self.assertIs(await self.client.network_available(), True)
         self.assertEqual(self.boinc.requests, ["<network_available/>"])
 
+    async def test_run_benchmarks(self):
+        self.assertIs(await self.client.run_benchmarks(), True)
+        self.assertEqual(self.boinc.requests, ["<run_benchmarks/>"])
+
+    async def test_read_cc_config(self):
+        self.assertIs(await self.client.read_cc_config(), True)
+        self.assertEqual(self.boinc.requests, ["<read_cc_config/>"])
+
+    async def test_read_global_prefs_override(self):
+        self.assertIs(await self.client.read_global_prefs_override(), True)
+        self.assertEqual(self.boinc.requests, ["<read_global_prefs_override/>"])
+
+    async def test_reset_host_info(self):
+        self.assertIs(await self.client.reset_host_info(), True)
+        self.assertEqual(self.boinc.requests, ["<reset_host_info/>"])
+
+
+class ReadCcConfigTest(RPCClientTestCase):
+
+    # As handle_read_cc_config() in client/gui_rpc_server_ops.cpp answers: the success, and then
+    # every task
+    replies = (
+        "<boinc_gui_rpc_reply>\n<success/>\n<result>\n    <name>task_0</name>\n</result>\n"
+        "<result>\n    <name>task_1</name>\n</result>\n</boinc_gui_rpc_reply>",
+        "<boinc_gui_rpc_reply><cc_status><task_mode>2</task_mode></cc_status></boinc_gui_rpc_reply>",
+    )
+
+    async def test_the_tasks_after_the_success_are_left_out(self):
+        self.assertIs(await self.client.read_cc_config(), True)
+        # And they are not taken for the reply to the next request
+        self.assertEqual((await self.client.get_cc_status())["task_mode"], 2)
+
     async def test_set_language(self):
         self.assertIs(await self.client.set_language("es"), True)
         self.assertEqual(

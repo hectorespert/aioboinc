@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- **Added** `run_benchmarks()`, `read_cc_config()`, `read_global_prefs_override()` and
+  `reset_host_info()`, to run the CPU benchmarks and to have BOINC read again its configuration,
+  its preferences or the description of the host.
+
 ## 0.10.0
 
 - **Added** `update_project()`, `suspend_project()`, `resume_project()`, `no_new_tasks()` and
