@@ -13,6 +13,8 @@
 - **Added** `get_notices()` and `get_notices_public()`, which return the notices newer than a
   sequence number, oldest first, under `notices`. When BOINC has removed notices, `refresh` is
   `True` and `notices` holds all of them, to replace those got before.
+- **Added** `get_statistics()`, which returns the credit of the user and of the host for each day,
+  by project, as the Statistics tab of the BOINC Manager draws it.
 
 ## 0.9.0
 

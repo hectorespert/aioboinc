@@ -337,6 +337,62 @@ class MessagesTest(RPCClientTestCase):
         )
 
 
+class StatisticsTest(RPCClientTestCase):
+
+    # As PROJECT::write_statistics() in client/project.cpp writes them
+    replies = (
+        """<boinc_gui_rpc_reply>
+<statistics>
+<project_statistics>
+    <master_url>https://example.org/</master_url>
+    <daily_statistics>
+        <day>1792627200.000000</day>
+        <user_total_credit>6003209.070563</user_total_credit>
+        <user_expavg_credit>9926.368779</user_expavg_credit>
+        <host_total_credit>2061033.250151</host_total_credit>
+        <host_expavg_credit>9809.884259</host_expavg_credit>
+    </daily_statistics>
+    <daily_statistics>
+        <day>1792713600.000000</day>
+        <user_total_credit>6010923.767445</user_total_credit>
+        <user_expavg_credit>10382.212385</user_expavg_credit>
+        <host_total_credit>2068683.137689</host_total_credit>
+        <host_expavg_credit>10253.652183</host_expavg_credit>
+    </daily_statistics>
+</project_statistics>
+<project_statistics>
+    <master_url>https://new.example.org/</master_url>
+</project_statistics>
+</statistics>
+</boinc_gui_rpc_reply>""",
+    )
+
+    async def test_returns_every_day_of_every_project(self):
+        statistics = await self.client.get_statistics()
+        self.assertEqual(self.boinc.requests, ["<get_statistics/>"])
+        self.assertEqual(
+            [p["master_url"] for p in statistics], ["https://example.org/", "https://new.example.org/"]
+        )
+        days = statistics[0]["daily_statistics"]
+        self.assertEqual(
+            [d["day"] for d in days],
+            [datetime(2026, 10, 22, tzinfo=UTC), datetime(2026, 10, 23, tzinfo=UTC)],
+        )
+        self.assertEqual(
+            days[1],
+            {
+                "day": datetime(2026, 10, 23, tzinfo=UTC),
+                "user_total_credit": 6010923.767445,
+                "user_expavg_credit": 10382.212385,
+                "host_total_credit": 2068683.137689,
+                "host_expavg_credit": 10253.652183,
+            },
+        )
+
+    async def test_a_project_without_days_has_an_empty_list(self):
+        self.assertEqual((await self.client.get_statistics())[1]["daily_statistics"], [])
+
+
 NOTICE = """<notice>
    <title>Downtime on Tuesday</title>
    <description><![CDATA[

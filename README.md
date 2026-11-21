@@ -114,6 +114,7 @@ To read the state of the BOINC client:
 | `get_notices_public(seqno=0)` | The same, without the private notices, and without `authorize()` |
 | `get_project_status()` | A list of the projects, as `Project` objects, importable from `aioboinc`, that compare equal to their URL |
 | `get_results(active_only=False)` | A list of the tasks; with `active_only=True`, only those started and not finished |
+| `get_statistics()` | The credit of the user and of the host for each day, as a list with a dict for each project, with its `master_url` and its `daily_statistics` |
 
 The replies are dicts and lists keyed by the names of the elements BOINC sends, described in the
 [protocol](https://github.com/BOINC/boinc/wiki/GuiRpcProtocol#requests-and-replies). Numbers come

@@ -325,6 +325,7 @@ class WrongReplyTest(RPCClientTestCase):
         "get_notices_public": "notices",
         "get_project_status": "projects",
         "get_results": "results",
+        "get_statistics": "statistics",
     }
 
     async def test_a_query_answered_with_another_reply_raises_and_drops_the_connection(self):
