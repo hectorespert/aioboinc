@@ -12,10 +12,24 @@ from hashlib import md5
 from typing import Any, cast
 
 from ._constants import Mode
-from ._parse import Project, parse_generic, parse_project, parse_result
+from ._parse import Project, parse_generic, parse_project, parse_result, with_flags
 from ._raw_client import DEFAULT_TIMEOUT, GUI_RPC_DEFAULT_PORT, _RPCClientRaw
 from ._tag import Tag
-from ._types import CcStatus, DiskUsage, HostInfo, Message, Notices, Result, Version
+from ._types import (
+    AcctMgrInfo,
+    CcStatus,
+    DailyXfer,
+    DiskUsage,
+    FileTransfer,
+    HostInfo,
+    Message,
+    NewerVersion,
+    Notices,
+    OldResult,
+    ProjectStatistics,
+    Result,
+    Version,
+)
 from .exceptions import BOINCAuthError, BOINCClientError, BOINCCommandError, BOINCProtocolError
 
 __all__ = ["BOINCClientError", "Mode", "RPCClient", "init_rpc_client"]
@@ -274,19 +288,21 @@ class RPCClient:
         req = ET.Element(Tag.EXCHANGE_VERSIONS)
         return parse_generic(await self._request(req, Tag.SERVER_VERSION))
 
-    async def get_acct_mgr_info(self):
+    async def get_acct_mgr_info(self) -> AcctMgrInfo:
         """
         Get the account manager the BOINC client uses to choose its projects, such as BAM! or
         Science United, if any
 
         Returns:
-            A dict with acct_mgr_url and acct_mgr_name, "" without an account manager.
-            have_credentials is there, True, only when BOINC has the login to it, and
-            cookie_required, with cookie_failure_url, only when the account manager needs a
-            cookie from its website.
+            An AcctMgrInfo, a dict with acct_mgr_url and acct_mgr_name, "" without an account
+            manager. have_credentials is True when BOINC has the login to it, and cookie_required,
+            with cookie_failure_url, when the account manager needs a cookie from its website.
         """
         req = ET.Element(Tag.ACCT_MGR_INFO)
-        return parse_generic(await self._request(req, Tag.ACCT_MGR_INFO))
+        return with_flags(
+            parse_generic(await self._request(req, Tag.ACCT_MGR_INFO)),
+            (Tag.HAVE_CREDENTIALS, Tag.COOKIE_REQUIRED),
+        )
 
     async def get_cc_status(self) -> CcStatus:
         """
@@ -298,13 +314,15 @@ class RPCClient:
             a SuspendReason, NOT_SUSPENDED when it is not, and network_status a NetworkStatus.
             task_mode_delay, gpu_mode_delay and network_mode_delay are the seconds left of a
             temporary mode, as float, and 0 without one. ams_password_error, disallow_attach and
-            simple_gui_only are bool, and manager_must_quit is there, True, only when an update asks
-            the BOINC Manager to quit.
+            simple_gui_only are bool, and manager_must_quit is True only when an update asks the
+            BOINC Manager to quit.
         """
         req = ET.Element(Tag.GET_CC_STATUS)
-        return parse_generic(await self._request(req, Tag.CC_STATUS))
+        return with_flags(
+            parse_generic(await self._request(req, Tag.CC_STATUS)), (Tag.MANAGER_MUST_QUIT,)
+        )
 
-    async def get_daily_xfer_history(self):
+    async def get_daily_xfer_history(self) -> list[DailyXfer]:
         """
         Get how many bytes BOINC has uploaded and downloaded each day
 
@@ -341,7 +359,7 @@ class RPCClient:
                 res[c.tag] = parse_generic(c)
         return cast(DiskUsage, res)
 
-    async def get_file_transfers(self):
+    async def get_file_transfers(self) -> list[FileTransfer]:
         """
         Get the files being uploaded or downloaded
 
@@ -402,7 +420,7 @@ class RPCClient:
             ET.SubElement(req, Tag.TRANSLATABLE)
         return parse_generic(await self._request(req, Tag.MSGS))
 
-    async def get_statistics(self):
+    async def get_statistics(self) -> list[ProjectStatistics]:
         """
         Get the credit of the user and of the host for each day, by project, as the Statistics tab
         of the BOINC Manager draws it
@@ -423,13 +441,13 @@ class RPCClient:
         # of, so they are gathered in a list.
         return [
             {
-                Tag.MASTER_URL: p.findtext(Tag.MASTER_URL, ""),
-                Tag.DAILY_STATISTICS: [parse_generic(d) for d in p.findall(Tag.DAILY_STATISTICS)],
+                "master_url": p.findtext(Tag.MASTER_URL, ""),
+                "daily_statistics": [parse_generic(d) for d in p.findall(Tag.DAILY_STATISTICS)],
             }
             for p in await self._request(req, Tag.STATISTICS)
         ]
 
-    async def get_newer_version(self):
+    async def get_newer_version(self) -> NewerVersion:
         """
         Get the newest version of the BOINC client, when it is newer than the one running
 
@@ -446,7 +464,7 @@ class RPCClient:
         req = ET.Element(Tag.GET_NEWER_VERSION)
         # The two come as elements of their own, side by side in the reply
         reply = await self._request_reply(req, Tag.NEWER_VERSION)
-        return {c.tag: parse_generic(c) for c in reply}
+        return cast(NewerVersion, {c.tag: parse_generic(c) for c in reply})
 
     async def get_notices(self, seqno=0) -> Notices:
         """
@@ -497,7 +515,7 @@ class RPCClient:
             "notices": [n for n in notices if n.get(Tag.SEQNO) != -1],
         }
 
-    async def get_old_results(self):
+    async def get_old_results(self) -> list[OldResult]:
         """
         Get the tasks BOINC has reported and deleted in the last hour or so, which get_results() no
         longer has
