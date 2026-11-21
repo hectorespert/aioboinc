@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- **Added** the types of the replies of `exchange_versions()`, `get_cc_status()` and
+  `get_disk_usage()`: `Version`, `CcStatus`, `DiskUsage` and `ProjectDiskUsage`, importable from
+  `aioboinc`. They are `TypedDict`, so the replies are still the same dicts, and an editor or mypy
+  now knows their keys and the type of each.
+
 ## 0.11.0
 
 - **Added** `run_benchmarks()`, `read_cc_config()`, `read_global_prefs_override()` and

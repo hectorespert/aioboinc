@@ -9,12 +9,13 @@ https://github.com/BOINC/boinc/wiki/GuiRpcProtocol#requests-and-replies
 import asyncio
 import xml.etree.ElementTree as ET
 from hashlib import md5
-from typing import Any
+from typing import Any, cast
 
 from ._constants import Mode
 from ._parse import Project, parse_generic, parse_project
 from ._raw_client import DEFAULT_TIMEOUT, GUI_RPC_DEFAULT_PORT, _RPCClientRaw
 from ._tag import Tag
+from ._types import CcStatus, DiskUsage, Version
 from .exceptions import BOINCAuthError, BOINCClientError, BOINCCommandError, BOINCProtocolError
 
 __all__ = ["BOINCClientError", "Mode", "RPCClient", "init_rpc_client"]
@@ -262,12 +263,13 @@ class RPCClient:
         """
         return True if RPCClient._check_reply(reply).tag == Tag.SUCCESS else reply
 
-    async def exchange_versions(self):
+    async def exchange_versions(self) -> Version:
         """
         Get the version of the BOINC client
 
         Returns:
-            A dict with major, minor and release, such as {"major": 7, "minor": 16, "release": 3}.
+            A Version, a dict with major, minor and release, such as
+            {"major": 7, "minor": 16, "release": 3}.
         """
         req = ET.Element(Tag.EXCHANGE_VERSIONS)
         return parse_generic(await self._request(req, Tag.SERVER_VERSION))
@@ -286,18 +288,18 @@ class RPCClient:
         req = ET.Element(Tag.ACCT_MGR_INFO)
         return parse_generic(await self._request(req, Tag.ACCT_MGR_INFO))
 
-    async def get_cc_status(self):
+    async def get_cc_status(self) -> CcStatus:
         """
         Get the state of the BOINC client: its modes, why it is suspended, and its network
 
         Returns:
-            A dict, with task_mode, task_suspend_reason, gpu_mode, network_mode and network_status
-            among others. The modes and their *_perm are a Mode, the suspend reasons a
-            SuspendReason, NOT_SUSPENDED when it is not, and network_status a NetworkStatus.
+            A CcStatus, a dict with task_mode, task_suspend_reason, gpu_mode, network_mode and
+            network_status among others. The modes and their *_perm are a Mode, the suspend reasons
+            a SuspendReason, NOT_SUSPENDED when it is not, and network_status a NetworkStatus.
             task_mode_delay, gpu_mode_delay and network_mode_delay are the seconds left of a
-            temporary mode, as float, and 0 without one. ams_password_error, disallow_attach and simple_gui_only are
-            bool, and manager_must_quit is there, True, only when an update asks the BOINC Manager
-            to quit.
+            temporary mode, as float, and 0 without one. ams_password_error, disallow_attach and
+            simple_gui_only are bool, and manager_must_quit is there, True, only when an update asks
+            the BOINC Manager to quit.
         """
         req = ET.Element(Tag.GET_CC_STATUS)
         return parse_generic(await self._request(req, Tag.CC_STATUS))
@@ -315,12 +317,12 @@ class RPCClient:
         # The days come as repeated <dx> elements, which a dict keeps only the last of
         return [parse_generic(c) for c in await self._request(req, Tag.DAILY_XFERS)]
 
-    async def get_disk_usage(self):
+    async def get_disk_usage(self) -> DiskUsage:
         """
         Get how much of the disk BOINC and each project use, in bytes
 
         Returns:
-            A dict with:
+            A DiskUsage, a dict with:
                 project: A list with a dict for each project, with its master_url and disk_usage.
                 d_total: Size of the disk.
                 d_free: Free space on the disk.
@@ -337,7 +339,7 @@ class RPCClient:
                 res[Tag.PROJECT].append(parse_generic(c))
             else:
                 res[c.tag] = parse_generic(c)
-        return res
+        return cast(DiskUsage, res)
 
     async def get_file_transfers(self):
         """

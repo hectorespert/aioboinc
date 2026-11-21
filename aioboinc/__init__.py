@@ -10,6 +10,7 @@ from ._constants import (
     SuspendReason,
 )
 from ._parse import Project
+from ._types import CcStatus, DiskUsage, ProjectDiskUsage, Version
 from .exceptions import (
     BOINCAuthError,
     BOINCClientError,
@@ -30,15 +31,19 @@ __all__ = [
     "BOINCError",
     "BOINCProtocolError",
     "BOINCTimeoutError",
+    "CcStatus",
+    "DiskUsage",
     "DockerType",
     "MessagePriority",
     "Mode",
     "NetworkStatus",
     "Project",
+    "ProjectDiskUsage",
     "RPCClient",
     "ResultState",
     "RpcReason",
     "SchedulerState",
     "SuspendReason",
+    "Version",
     "init_rpc_client",
 ]
