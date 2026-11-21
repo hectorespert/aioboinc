@@ -381,6 +381,15 @@ class HostInfoWithRepeatedElementsTest(RPCClientTestCase):
             <os_version>22.04</os_version>
             <wsl_version>2</wsl_version>
             <distro_version>3</distro_version>
+            <wsl_gpu>
+                <name>NVIDIA GeForce RTX 3060</name>
+                <has_cuda/>
+                <has_opencl/>
+            </wsl_gpu>
+            <wsl_gpu>
+                <name>Intel(R) UHD Graphics</name>
+                <has_opencl/>
+            </wsl_gpu>
         </distro>
     </wsl>
 <opencl_cpu_prop>
@@ -404,6 +413,20 @@ class HostInfoWithRepeatedElementsTest(RPCClientTestCase):
     async def test_every_wsl_distribution_is_there(self):
         info = await self.client.get_host_info()
         self.assertEqual([d["distro_name"] for d in info["wsl"]], ["Ubuntu", "boinc-buda-runner"])
+
+    async def test_the_version_of_a_distribution_is_a_number(self):
+        info = await self.client.get_host_info()
+        self.assertEqual(info["wsl"][1]["distro_version"], 3)
+
+    async def test_every_gpu_of_a_distribution_is_there(self):
+        info = await self.client.get_host_info()
+        self.assertEqual(
+            info["wsl"][1]["wsl_gpu"],
+            [
+                {"name": "NVIDIA GeForce RTX 3060", "has_cuda": True, "has_opencl": True},
+                {"name": "Intel(R) UHD Graphics", "has_opencl": True},
+            ],
+        )
 
     async def test_every_opencl_platform_of_the_cpu_is_there(self):
         info = await self.client.get_host_info()

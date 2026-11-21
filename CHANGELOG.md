@@ -15,6 +15,9 @@
 - **Fixed** `get_host_info()` keeping only the last of some elements BOINC repeats: the OpenCL
   properties of the CPU, one for each OpenCL platform, and the WSL distributions of a Windows host.
   `opencl_cpu_prop` and `wsl` are now a list of all of them.
+- **Fixed** two fields of a WSL distribution in `get_host_info()`, on Windows: `distro_version`
+  came as a `str`, and is now an `int`, and only the last of its GPUs was kept, and `wsl_gpu` is
+  now a list of all of them.
 
 ## 0.11.0
 

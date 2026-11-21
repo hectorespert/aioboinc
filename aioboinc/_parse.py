@@ -88,6 +88,8 @@ INTEGER_TAG = {
     Tag.METAL_SUPPORT,
     # The state of a file transfer, as a number
     Tag.STATUS,
+    # The version of the BOINC WSL distribution, in the wsl of get_host_info()
+    Tag.DISTRO_VERSION,
 }
 
 FLOAT_TAG = {
@@ -240,6 +242,8 @@ LIST_TAG = {
 # only when there is one at least.
 REPEATED_TAG = {
     Tag.OPENCL_CPU_PROP,
+    # The GPUs a WSL distribution sees, in the wsl of get_host_info()
+    Tag.WSL_GPU,
 }
 
 TIMEDELTA_TAG = {
