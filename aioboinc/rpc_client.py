@@ -12,10 +12,10 @@ from hashlib import md5
 from typing import Any, cast
 
 from ._constants import Mode
-from ._parse import Project, parse_generic, parse_project
+from ._parse import Project, parse_generic, parse_project, parse_result
 from ._raw_client import DEFAULT_TIMEOUT, GUI_RPC_DEFAULT_PORT, _RPCClientRaw
 from ._tag import Tag
-from ._types import CcStatus, DiskUsage, HostInfo, Version
+from ._types import CcStatus, DiskUsage, HostInfo, Result, Version
 from .exceptions import BOINCAuthError, BOINCClientError, BOINCCommandError, BOINCProtocolError
 
 __all__ = ["BOINCClientError", "Mode", "RPCClient", "init_rpc_client"]
@@ -531,7 +531,7 @@ class RPCClient:
         req = ET.Element(Tag.GET_PROJECT_STATUS)
         return [parse_project(c) for c in await self._request(req, Tag.PROJECTS)]
 
-    async def get_results(self, active_only=False):
+    async def get_results(self, active_only=False) -> list[Result]:
         """
         Get the tasks
 
@@ -543,12 +543,14 @@ class RPCClient:
             A list with a dict for each task, [] when there is none, with name, project_url,
             report_deadline and active_task among others. project_url is a Project, state a
             ResultState, and the active_task_state and scheduler_state of active_task an
-            ActiveTaskState and a SchedulerState.
+            ActiveTaskState and a SchedulerState. A flag BOINC sends only when it is set, such as
+            suspended_via_gui or ready_to_report, is False when it does not, and so are those of
+            active_task. active_task is there only for a task BOINC has started.
         """
         req = ET.Element(Tag.GET_RESULTS)
         if active_only:
             ET.SubElement(req, Tag.ACTIVE_ONLY)
-        return parse_generic(await self._request(req, Tag.RESULTS))
+        return [cast(Result, parse_result(c)) for c in await self._request(req, Tag.RESULTS)]
 
     ######################################################################
     # Controlling the server

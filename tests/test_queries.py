@@ -924,10 +924,11 @@ class ResultsTest(RPCClientTestCase):
         self.assertIs(task["active_task"]["active_task_state"], ActiveTaskState.UNINITIALIZED)
         self.assertIs(task["active_task"]["scheduler_state"], SchedulerState.PREEMPTED)
 
-    async def test_a_flag_is_true_when_present_and_missing_when_not(self):
+    async def test_a_flag_is_true_when_present_and_false_when_not(self):
         task = (await self.client.get_results())[0]
         self.assertIs(task["report_immediately"], True)
-        self.assertNotIn("ready_to_report", task)
+        self.assertIs(task["ready_to_report"], False)
+        self.assertIs(task["active_task"]["needs_shmem"], False)
 
     async def test_can_ask_for_active_tasks_only(self):
         await self.client.get_results(active_only=True)

@@ -10,10 +10,19 @@ A reply may also have keys these do not list, from a newer BOINC client. A state
 enum, or an int for a value the enum does not have yet.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, NotRequired, TypedDict
 
-from ._constants import DockerType, Mode, NetworkStatus, SuspendReason
+from ._constants import (
+    ActiveTaskState,
+    DockerType,
+    Mode,
+    NetworkStatus,
+    ResultState,
+    SchedulerState,
+    SuspendReason,
+)
+from ._parse import Project
 
 
 class Version(TypedDict):
@@ -165,3 +174,80 @@ class HostInfo(TypedDict):
     opencl_cpu_prop: NotRequired[list[dict[str, Any]]]
     # Before BOINC 8.2
     wsl_available: NotRequired[bool]
+
+
+class ActiveTask(TypedDict):
+    """
+    The process of a task BOINC has started, as active_task in get_results()
+    """
+
+    active_task_state: ActiveTaskState | int
+    app_version_num: int
+    slot: int
+    pid: int
+    scheduler_state: SchedulerState | int
+    checkpoint_cpu_time: timedelta
+    fraction_done: float
+    current_cpu_time: timedelta
+    elapsed_time: timedelta
+    # Bytes
+    swap_size: float
+    working_set_size: float
+    working_set_size_smoothed: float
+    # False when BOINC does not send them
+    too_large: bool
+    swap_too_large: bool
+    needs_shmem: bool
+    want_network: bool
+    # Bytes, in BOINC clients after 8.2
+    virtual_size: NotRequired[float]
+    # Page faults per second, and bytes the process sent and received, up to BOINC 8.2
+    page_fault_rate: NotRequired[float]
+    bytes_sent: NotRequired[float]
+    bytes_received: NotRequired[float]
+    # The fraction done per second, once there is one
+    progress_rate: NotRequired[float]
+    # Only when the application has graphics, a web page or a remote desktop
+    graphics_exec_path: NotRequired[str]
+    slot_path: NotRequired[str]
+    web_graphics_url: NotRequired[str]
+    remote_desktop_addr: NotRequired[str]
+
+
+class Result(TypedDict):
+    """
+    A task, from get_results()
+    """
+
+    name: str
+    wu_name: str
+    platform: str
+    version_num: int
+    plan_class: str
+    # The project, with only its master_url, equal to the URL
+    project_url: Project
+    final_cpu_time: timedelta
+    final_elapsed_time: timedelta
+    exit_status: int
+    state: ResultState | int
+    report_deadline: datetime | None
+    received_time: datetime | None
+    estimated_cpu_time_remaining: timedelta
+    # False when BOINC does not send them
+    got_server_ack: bool
+    ready_to_report: bool
+    suspended_via_gui: bool
+    project_suspended_via_gui: bool
+    report_immediately: bool
+    edf_scheduled: bool
+    coproc_missing: bool
+    scheduler_wait: bool
+    network_wait: bool
+    # Only once it is done
+    completed_time: NotRequired[datetime]
+    # Only while it waits, when BOINC knows why
+    scheduler_wait_reason: NotRequired[str]
+    # Only once BOINC has started it
+    active_task: NotRequired[ActiveTask]
+    # What it uses, such as "1 CPU + 1 NVIDIA GPU", unless it is one CPU
+    resources: NotRequired[str]

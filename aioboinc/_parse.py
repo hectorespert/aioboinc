@@ -427,6 +427,37 @@ def parse_generic(e: ET.Element):
         return True if e.tag in BOOL_TAG else ""
 
 
+# The flags BOINC writes in a task, and in its active task, only when they are set
+RESULT_FLAG_TAG = (
+    Tag.GOT_SERVER_ACK,
+    Tag.READY_TO_REPORT,
+    Tag.SUSPENDED_VIA_GUI,
+    Tag.PROJECT_SUSPENDED_VIA_GUI,
+    Tag.REPORT_IMMEDIATELY,
+    Tag.EDF_SCHEDULED,
+    Tag.COPROC_MISSING,
+    Tag.SCHEDULER_WAIT,
+    Tag.NETWORK_WAIT,
+)
+ACTIVE_TASK_FLAG_TAG = (
+    Tag.TOO_LARGE,
+    Tag.SWAP_TOO_LARGE,
+    Tag.NEEDS_SHMEM,
+    Tag.WANT_NETWORK,
+)
+
+
+def parse_result(e: ET.Element) -> dict[str, Any]:
+    # The flags are there, False, when BOINC does not send them
+    result: dict[str, Any] = dict.fromkeys(RESULT_FLAG_TAG, False)
+    result.update(parse_generic(e))
+    if Tag.ACTIVE_TASK in result:
+        active_task: dict[str, Any] = dict.fromkeys(ACTIVE_TASK_FLAG_TAG, False)
+        active_task.update(result[Tag.ACTIVE_TASK])
+        result[Tag.ACTIVE_TASK] = active_task
+    return result
+
+
 def parse_project(e: ET.Element) -> "Project":
     # The lists of resources, and of links, are there, empty, when BOINC sends none
     fields: dict[str, Any] = {tag: [] for tag in RESOURCE_NAMES_TAG}
