@@ -60,7 +60,10 @@ class FakeBoinc:
         self.default = default
         self.requests = []
         self.received = asyncio.Event()
+        self.connected = asyncio.Event()
         self.disconnected = asyncio.Event()
+        # How many connections it has accepted
+        self.connections = 0
         self._server = None
         self._writers = []
 
@@ -88,6 +91,8 @@ class FakeBoinc:
 
     async def _handle(self, reader, writer):
         self._writers.append(writer)
+        self.connections += 1
+        self.connected.set()
         try:
             while True:
                 try:

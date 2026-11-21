@@ -1,16 +1,15 @@
 import asyncio
 
-from aioboinc import BOINCAuthError, Mode, init_rpc_client
+from aioboinc import BOINCAuthError, Mode, RPCClient
 
 IP_BOINC = "127.0.0.1"
 PASSWORD_BOINC = "example_password"
 
 
 async def main():
-    # A host that cannot be reached raises BOINCConnectionError. See Errors in the README for the
-    # rest.
-    rpc_client = await init_rpc_client(IP_BOINC, PASSWORD_BOINC)
-    try:
+    # Leaving the block closes the connection, even on an error. A host that cannot be reached
+    # raises BOINCConnectionError; see Errors in the README for the rest.
+    async with RPCClient(IP_BOINC, PASSWORD_BOINC) as rpc_client:
         # Connecting does not authenticate. Do it before anything else: without it BOINC refuses
         # to change anything, and to answer queries from another host, with BOINCAuthError.
         try:
@@ -38,8 +37,6 @@ async def main():
         # Stop computing for an hour, then go back to what was configured.
         # A duration of 0, the default, makes the change permanent.
         print(await rpc_client.set_run_mode(Mode.NEVER, 3600))
-    finally:
-        await rpc_client.close()
 
 
 asyncio.run(main())

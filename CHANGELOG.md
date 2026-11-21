@@ -5,6 +5,9 @@
 - **Added** `Mode`, `RPCClient` and `Project` to the names importable from `aioboinc`, as in
   `from aioboinc import Mode`. They were only in the modules `aioboinc.rpc_client` and
   `aioboinc._parse`, the second private; importing them from there still works.
+- **Added** `async with` to `RPCClient`. `async with RPCClient(host, password) as client:` connects
+  on entering and closes the connection on leaving, even on an error, so it is no longer left open
+  when a request raises. On a client from `init_rpc_client()` it keeps the connection there is.
 
 ## 0.8.0
 

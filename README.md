@@ -36,16 +36,16 @@ pip install aioboinc
 ```python
 import asyncio
 
-from aioboinc import BOINCAuthError, Mode, init_rpc_client
+from aioboinc import BOINCAuthError, Mode, RPCClient
 
 IP_BOINC = "127.0.0.1"
 PASSWORD_BOINC = "example_password"
 
 
 async def main():
-    # A host that cannot be reached raises BOINCConnectionError. See Errors below for the rest.
-    rpc_client = await init_rpc_client(IP_BOINC, PASSWORD_BOINC)
-    try:
+    # Leaving the block closes the connection, even on an error. A host that cannot be reached
+    # raises BOINCConnectionError; see Errors below for the rest.
+    async with RPCClient(IP_BOINC, PASSWORD_BOINC) as rpc_client:
         # Connecting does not authenticate. Do it before anything else: without it BOINC refuses
         # to change anything, and to answer queries from another host, with BOINCAuthError.
         try:
@@ -73,8 +73,6 @@ async def main():
         # Stop computing for an hour, then go back to what was configured.
         # A duration of 0, the default, makes the change permanent.
         print(await rpc_client.set_run_mode(Mode.NEVER, 3600))
-    finally:
-        await rpc_client.close()
 
 
 asyncio.run(main())
@@ -83,7 +81,9 @@ asyncio.run(main())
 ## Methods
 
 `init_rpc_client(host, password=None, port=31416, timeout=30.0)` connects to the BOINC client on
-`host` and returns an `RPCClient`. `timeout` is the seconds to connect, and to get each reply
+`host` and returns an `RPCClient`. `async with RPCClient(host, password=None, port=31416,
+timeout=30.0) as client:` does the same, and closes the connection when the block ends, even on
+an error; `async with` on a client from `init_rpc_client()` closes it too. `timeout` is the seconds to connect, and to get each reply
 afterwards; `None` waits forever. `password` is the one in `gui_rpc_auth.cfg`, in the BOINC data
 directory.
 

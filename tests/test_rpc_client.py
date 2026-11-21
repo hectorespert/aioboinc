@@ -20,9 +20,10 @@ from aioboinc import (
     BOINCTimeoutError,
     Mode,
     RPCClient,
+    init_rpc_client,
 )
 
-from .fake_boinc import HANG_UP, NO_REPLY, HangUpMidway, Late, RPCClientTestCase, Split
+from .fake_boinc import HANG_UP, NO_REPLY, FakeBoinc, HangUpMidway, Late, RPCClientTestCase, Split
 from .fixtures import web_state
 
 
@@ -334,6 +335,45 @@ class SplitReplyTest(RPCClientTestCase):
         self.assertEqual(status["task_mode"], 2)
         self.assertEqual(status["gpu_mode"], 3)
         self.assertTrue(self.client.connected)
+
+
+class AsyncWithTest(unittest.IsolatedAsyncioTestCase):
+
+    async def asyncSetUp(self):
+        self.boinc = FakeBoinc()
+        self.port = await self.boinc.start()
+        self.addAsyncCleanup(self.boinc.stop)
+
+    async def test_connects_on_entering_and_closes_on_leaving(self):
+        async with RPCClient("127.0.0.1", "secret", self.port) as client:
+            self.assertTrue(client.connected)
+            self.assertIs(await client.network_available(), True)
+        self.assertFalse(client.connected)
+        await asyncio.wait_for(self.boinc.disconnected.wait(), 5)
+
+    async def test_closes_on_an_error_and_lets_it_through(self):
+        with self.assertRaisesRegex(RuntimeError, "in the block"):
+            async with RPCClient("127.0.0.1", "secret", self.port) as client:
+                raise RuntimeError("in the block")
+        self.assertFalse(client.connected)
+        await asyncio.wait_for(self.boinc.disconnected.wait(), 5)
+
+    async def test_a_client_from_init_rpc_client_keeps_its_connection(self):
+        client = await init_rpc_client("127.0.0.1", "secret", self.port)
+        # So that the fake BOINC can stop even if the block does not close it
+        self.addAsyncCleanup(client.close)
+        await asyncio.wait_for(self.boinc.connected.wait(), 5)
+        async with client as entered:
+            self.assertIs(entered, client)
+            await client.network_available()
+        self.assertEqual(self.boinc.connections, 1)
+        self.assertFalse(client.connected)
+
+    async def test_a_host_that_cannot_be_reached_raises_on_entering(self):
+        await self.boinc.stop()
+        with self.assertRaises(BOINCConnectionError):
+            async with RPCClient("127.0.0.1", "secret", self.port):
+                self.fail("entered the block without a connection")
 
 
 class ExportsTest(unittest.TestCase):
