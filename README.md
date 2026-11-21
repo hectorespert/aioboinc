@@ -105,6 +105,7 @@ To read the state of the BOINC client:
 | --- | --- |
 | `exchange_versions()` | The version of the BOINC client, as a dict with `major`, `minor` and `release` |
 | `get_cc_status()` | Its modes, why it is suspended, and the state of its network, as a dict |
+| `get_daily_xfer_history()` | The bytes uploaded and downloaded each day, newest first, as a list of dicts with `when`, a `date`, `up` and `down` |
 | `get_disk_usage()` | The disk space each project uses, under `project`, and the totals of the disk, in bytes |
 | `get_file_transfers()` | A list of the uploads and downloads |
 | `get_host_info()` | The description of the host: CPU, memory, disk, operating system, GPUs |
@@ -119,6 +120,7 @@ To read the state of the BOINC client:
 The replies are dicts and lists keyed by the names of the elements BOINC sends, described in the
 [protocol](https://github.com/BOINC/boinc/wiki/GuiRpcProtocol#requests-and-replies). Numbers come
 as `int` or `float`, flags as `bool`, times as `datetime` in UTC, or `None` when they are not set,
+the days of `get_daily_xfer_history()` as `date`,
 and the CPU and elapsed times of a task, and the time so far and left of a transfer, as
 `timedelta`. Other durations, such as the `*_mode_delay` of `get_cc_status()` or the backoffs, are
 `float` seconds. States and reasons are enums importable from `aioboinc`, which compare equal to

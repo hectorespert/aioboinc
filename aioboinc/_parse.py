@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from enum import IntEnum
 from typing import Any
 from xml.etree import ElementTree as ET
@@ -140,6 +140,9 @@ FLOAT_TAG = {
     Tag.BYTES_XFERRED,
     Tag.LAST_BYTES_XFERRED,
     Tag.FILE_OFFSET,
+    # Bytes sent and received on a day of the transfer history
+    Tag.UP,
+    Tag.DOWN,
     # Seconds left of a backoff, sent only while there is one
     Tag.PROJECT_BACKOFF,
     Tag.DOWNLOAD_BACKOFF,
@@ -290,6 +293,9 @@ TAG_PARSER: dict[str, Callable[[str], Any]] = {
     Tag.BODY: lambda x: x.replace("<![CDATA[", "").replace("]]>", "").strip(),
     # Of a notice, which BOINC writes between newlines
     Tag.DESCRIPTION: str.strip,
+    # A day of the transfer history, as the number of days since 1970-01-01 in the time zone of the
+    # host BOINC runs on
+    Tag.WHEN: lambda x: date(1970, 1, 1) + timedelta(days=int(x)),
     Tag.PROJECT_URL: lambda x: Project(master_url=x)
 }
 INTEGER_TAG_PARSER = int

@@ -4,7 +4,7 @@ Tests for the requests that read from the BOINC client
 The replies are the ones in fixtures/web_state.py, captured from a real client.
 """
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 from aioboinc import (
     ActiveTaskState,
@@ -100,6 +100,46 @@ class CcStatusFlagsSetTest(RPCClientTestCase):
         status = await self.client.get_cc_status()
         self.assertIs(status["ams_password_error"], True)
         self.assertIs(status["manager_must_quit"], True)
+
+
+class DailyXferHistoryTest(RPCClientTestCase):
+
+    # As DAILY_XFER_HISTORY::write_xml() in client/net_stats.cpp writes it, newest first
+    replies = (
+        """<boinc_gui_rpc_reply>
+<daily_xfers>
+<dx>
+   <when>20778</when>
+   <up>1756975929.000000</up>
+   <down>1268207794.000000</down>
+</dx>
+<dx>
+   <when>20777</when>
+   <up>1531476955.000000</up>
+   <down>2092898794.000000</down>
+</dx>
+</daily_xfers>
+</boinc_gui_rpc_reply>""",
+    )
+
+    async def test_returns_every_day(self):
+        history = await self.client.get_daily_xfer_history()
+        self.assertEqual(self.boinc.requests, ["<get_daily_xfer_history/>"])
+        self.assertEqual(
+            history,
+            [
+                {"when": date(2026, 11, 21), "up": 1756975929.0, "down": 1268207794.0},
+                {"when": date(2026, 11, 20), "up": 1531476955.0, "down": 2092898794.0},
+            ],
+        )
+
+
+class NoDailyXferHistoryTest(RPCClientTestCase):
+
+    replies = ("<boinc_gui_rpc_reply>\n<daily_xfers>\n</daily_xfers>\n</boinc_gui_rpc_reply>",)
+
+    async def test_returns_an_empty_list(self):
+        self.assertEqual(await self.client.get_daily_xfer_history(), [])
 
 
 class DiskUsageTest(RPCClientTestCase):
