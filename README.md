@@ -149,7 +149,7 @@ Every error is a `BOINCError`, and all of them can be imported from `aioboinc`:
 | `BOINCCommandError` | BOINC answers the request with an error, such as `no such result` | Is kept, except in `authorize()` |
 | `BOINCConnectionError` | The host cannot be reached, or the connection is lost | Is dropped |
 | `BOINCTimeoutError` | The host does not answer within the timeout | Is dropped |
-| `BOINCProtocolError` | What answers is not a BOINC client: its reply is not XML, is empty, or is not the one `authorize()` expects | Is dropped |
+| `BOINCProtocolError` | What answers is not a BOINC client: its reply is not XML, is empty, or is not the one to the request, such as `<cc_status>` to `get_cc_status()` | Is dropped |
 
 `BOINCTimeoutError` and `BOINCProtocolError` are also `BOINCConnectionError`, so catching that one
 covers every lost connection. `BOINCConnectionError` is also a `ConnectionError`, and

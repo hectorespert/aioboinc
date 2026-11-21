@@ -8,6 +8,11 @@
 - **Added** `async with` to `RPCClient`. `async with RPCClient(host, password) as client:` connects
   on entering and closes the connection on leaving, even on an error, so it is no longer left open
   when a request raises. On a client from `init_rpc_client()` it keeps the connection there is.
+- **Fixed** a reply that is not the one to the query being returned as if it were. `get_cc_status()`
+  answered with `<results>` returned the list of tasks, and a query answered with `<success/>`
+  returned `""` or an empty list. Each query now checks the element of its reply, such as
+  `<cc_status>` for `get_cc_status()`, and raises `BOINCProtocolError` otherwise, dropping the
+  connection like the other protocol errors.
 
 ## 0.8.0
 
