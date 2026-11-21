@@ -361,6 +361,9 @@ class RPCClient:
             coprocs is a dict of the GPUs by the name of their resource, as in the rsc_backoff_time
             of a project: NVIDIA, ATI, intel_gpu or apple_gpu. There is one of each kind, with how
             many there are in count.
+            opencl_cpu_prop, the OpenCL properties of the CPU, is a list with one for each OpenCL
+            platform, there only when there is one, and wsl, on Windows, a list of the WSL
+            distributions.
             docker_type and docker_compose_type are a DockerType.
         """
         req = ET.Element(Tag.GET_HOST_INFO)

@@ -231,6 +231,16 @@ LIST_TAG = {
     Tag.PROJECTS,
     Tag.GUI_URLS,
     Tag.FILE_TRANSFERS,
+    Tag.COPROCS,
+    # The WSL distributions of a Windows host, in get_host_info()
+    Tag.WSL,
+}
+
+# An element that comes once for each of something, side by side with other elements, such as the
+# OpenCL properties of the CPU for each OpenCL platform in get_host_info(). They are a list, there
+# only when there is one at least.
+REPEATED_TAG = {
+    Tag.OPENCL_CPU_PROP,
 }
 
 TIMEDELTA_TAG = {
@@ -400,6 +410,8 @@ def parse_generic(e: ET.Element):
                 res.setdefault(c.tag, {})[c.findtext(Tag.NAME, "")] = value
             elif c.tag in RESOURCE_NAMES_TAG:
                 res.setdefault(c.tag, []).append(c.text or "")
+            elif c.tag in REPEATED_TAG:
+                res.setdefault(c.tag, []).append(parse_generic(c))
             else:
                 res[c.tag] = parse_generic(c)
         return res

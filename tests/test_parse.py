@@ -21,6 +21,7 @@ TAG_SETS = {
         # A dict of the parser of the value by tag
         "BY_RESOURCE_TAG",
         "RESOURCE_NAMES_TAG",
+        "REPEATED_TAG",
     )
 }
 
