@@ -159,6 +159,10 @@ To control it, after `authorize()`. Each returns `True` when BOINC answers with 
 | `set_gpu_mode(mode, duration=0)` | The same for the GPU |
 | `set_network_mode(mode, duration=0)` | The same for the network |
 | `network_available()` | Retries now the network communication BOINC has deferred |
+| `run_benchmarks()` | Runs the CPU benchmarks now |
+| `read_cc_config()` | Reads again `cc_config.xml` and the `app_config.xml` of the projects |
+| `read_global_prefs_override()` | Reads again the preferences of `global_prefs_override.xml` |
+| `reset_host_info()` | Finds out again the CPUs, memory and disks of the host |
 | `set_language(language)` | Sets the language BOINC sends to the projects, such as `"es"` |
 | `quit()` | Stops the BOINC client on the host |
 

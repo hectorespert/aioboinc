@@ -347,6 +347,7 @@ class Tag:
     REPORT_DEADLINE = "report_deadline"
     REPORT_IMMEDIATELY = "report_immediately"
     REQUEST = "request"
+    RESET_HOST_INFO = "reset_host_info"
     RESOURCE_SHARE = "resource_share"
     RESOURCES = "resources"
     RESTORE = "restore"

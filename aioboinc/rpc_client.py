@@ -798,6 +798,49 @@ class RPCClient:
         """
         return await self._request_auth(ET.Element(Tag.NETWORK_AVAILABLE))
 
+    async def run_benchmarks(self):
+        """
+        Run the CPU benchmarks now, as Run CPU benchmarks in the BOINC Manager, even when the
+        configuration skips them. BOINC suspends the tasks while they run, with the suspend reason
+        BENCHMARKS, and its log says when they start and end; get_host_info() has the results.
+
+        Returns:
+            True, or the reply when BOINC answers something other than success. It is True too
+            when the benchmarks are already running, which BOINC only notes in its log.
+        """
+        return await self._request_auth(ET.Element(Tag.RUN_BENCHMARKS))
+
+    async def read_cc_config(self):
+        """
+        Read again the configuration files of the BOINC client, cc_config.xml and the app_config.xml
+        of the projects, as Read config files in the BOINC Manager, after changing them
+
+        Returns:
+            True, or the reply when BOINC answers something other than success.
+        """
+        # BOINC writes every task after the success, which _request() leaves out
+        return await self._request_auth(ET.Element(Tag.READ_CC_CONFIG))
+
+    async def read_global_prefs_override(self):
+        """
+        Read again the computing preferences of global_prefs_override.xml, as Read local prefs
+        file in the BOINC Manager, after changing it
+
+        Returns:
+            True, or the reply when BOINC answers something other than success.
+        """
+        return await self._request_auth(ET.Element(Tag.READ_GLOBAL_PREFS_OVERRIDE))
+
+    async def reset_host_info(self):
+        """
+        Find out again the description of the host, such as its CPUs, memory and disks, for a
+        change BOINC has not noticed, as after adding memory to a virtual machine
+
+        Returns:
+            True, or the reply when BOINC answers something other than success.
+        """
+        return await self._request_auth(ET.Element(Tag.RESET_HOST_INFO))
+
     async def set_language(self, language: str):
         """
         Set the language of the user, which BOINC sends to the projects in its requests to them
