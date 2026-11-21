@@ -107,8 +107,9 @@ class RPCClient:
         BOINCCommandError: BOINC answered with an error, such as "no such result". The connection
             is kept, except in authorize().
         BOINCConnectionError: The connection could not be used or was lost, or the reply was not
-            one (BOINCProtocolError) or did not come in time (BOINCTimeoutError). The connection
-            is dropped: connect() and authorize() again to go on.
+            one, or not the one to the request (BOINCProtocolError), or did not come in time
+            (BOINCTimeoutError). The connection is dropped: connect() and authorize() again to go
+            on.
 
     Attributes:
         password: The password authorize() uses when it is given none.
@@ -222,14 +223,23 @@ class RPCClient:
             raise BOINCProtocolError(f"{host} did not answer auth2 with authorized")
         return True
 
-    async def _request(self, req: ET.Element):
+    async def _request(self, req: ET.Element, reply_tag: str | None = None):
         """
-        Raises BOINCAuthError if the server refuses the request for want of authorize(), and
-        BOINCCommandError if it answers with an error
+        Raises BOINCAuthError if the server refuses the request for want of authorize(),
+        BOINCCommandError if it answers with an error, and BOINCProtocolError if the reply is not
+        reply_tag, when one is given
         """
         async with self._lock:
-            reply = await self._raw_client.request(req)
-        return self._check_reply(reply)
+            reply = self._check_reply(await self._raw_client.request(req))
+            if reply_tag is not None and reply.tag != reply_tag:
+                # Not the reply to this request, so what comes next on the connection cannot be
+                # trusted to be the reply to the next one either. Dropped while holding the lock,
+                # so that no request waiting for its turn goes out on it.
+                self._raw_client._abort()
+                raise BOINCProtocolError(
+                    f"{self._raw_client.host} answered {req.tag} with {reply.tag}, not {reply_tag}"
+                )
+        return reply
 
     @staticmethod
     def _check_reply(reply: ET.Element) -> ET.Element:
@@ -271,7 +281,7 @@ class RPCClient:
             A dict with major, minor and release, such as {"major": 7, "minor": 16, "release": 3}.
         """
         req = ET.Element(Tag.EXCHANGE_VERSIONS)
-        return parse_generic(await self._request(req))
+        return parse_generic(await self._request(req, Tag.SERVER_VERSION))
 
     async def get_cc_status(self):
         """
@@ -286,7 +296,7 @@ class RPCClient:
             to quit.
         """
         req = ET.Element(Tag.GET_CC_STATUS)
-        return parse_generic(await self._request(req))
+        return parse_generic(await self._request(req, Tag.CC_STATUS))
 
     async def get_disk_usage(self):
         """
@@ -301,7 +311,7 @@ class RPCClient:
                 d_allowed: Space BOINC may use, under its preferences.
         """
         req = ET.Element(Tag.GET_DISK_USAGE)
-        rep = await self._request(req)
+        rep = await self._request(req, Tag.DISK_USAGE_SUMMARY)
         # The projects come as repeated <project> elements, which a dict keeps only the last of,
         # so they are gathered in a list. The totals of the disk follow them.
         res: dict[str, Any] = {Tag.PROJECT: []}
@@ -320,7 +330,7 @@ class RPCClient:
             A list with a dict for each transfer, [] when there is none.
         """
         req = ET.Element(Tag.GET_FILE_TRANSFERS)
-        return parse_generic(await self._request(req))
+        return parse_generic(await self._request(req, Tag.FILE_TRANSFERS))
 
     async def get_host_info(self):
         """
@@ -330,7 +340,7 @@ class RPCClient:
             A dict, with domain_name, p_ncpus, p_model, m_nbytes, os_name and coprocs among others.
         """
         req = ET.Element(Tag.GET_HOST_INFO)
-        return parse_generic(await self._request(req))
+        return parse_generic(await self._request(req, Tag.HOST_INFO))
 
     async def get_message_count(self):
         """
@@ -340,7 +350,7 @@ class RPCClient:
             The number, an int. It is also the count of messages since the client started.
         """
         req = ET.Element(Tag.GET_MESSAGE_COUNT)
-        return parse_generic(await self._request(req))
+        return parse_generic(await self._request(req, Tag.SEQNO))
 
     async def get_messages(self, seqno=0, translatable=False):
         """
@@ -361,7 +371,7 @@ class RPCClient:
         s.text = str(seqno)
         if translatable:
             ET.SubElement(req, Tag.TRANSLATABLE)
-        return parse_generic(await self._request(req))
+        return parse_generic(await self._request(req, Tag.MSGS))
 
     async def get_project_status(self):
         """
@@ -376,7 +386,7 @@ class RPCClient:
             resources each applies to, empty when none.
         """
         req = ET.Element(Tag.GET_PROJECT_STATUS)
-        return [parse_project(c) for c in await self._request(req)]
+        return [parse_project(c) for c in await self._request(req, Tag.PROJECTS)]
 
     async def get_results(self, active_only=False):
         """
@@ -393,7 +403,7 @@ class RPCClient:
         req = ET.Element(Tag.GET_RESULTS)
         if active_only:
             ET.SubElement(req, Tag.ACTIVE_ONLY)
-        return parse_generic(await self._request(req))
+        return parse_generic(await self._request(req, Tag.RESULTS))
 
     ######################################################################
     # Controlling the server

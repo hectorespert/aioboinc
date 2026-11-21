@@ -309,6 +309,41 @@ class HangUpInsteadOfReplyTest(RPCClientTestCase):
         self.assertFalse(self.client.connected)
 
 
+class WrongReplyTest(RPCClientTestCase):
+
+    # Every request gets <success/>, the default of the fake BOINC: the reply to a request that
+    # changes something, not to a query
+    QUERIES = {
+        "exchange_versions": "server_version",
+        "get_cc_status": "cc_status",
+        "get_disk_usage": "disk_usage_summary",
+        "get_file_transfers": "file_transfers",
+        "get_host_info": "host_info",
+        "get_message_count": "seqno",
+        "get_messages": "msgs",
+        "get_project_status": "projects",
+        "get_results": "results",
+    }
+
+    async def test_a_query_answered_with_another_reply_raises_and_drops_the_connection(self):
+        for query, reply_tag in self.QUERIES.items():
+            with self.subTest(query=query):
+                await self.client.connect()
+                with self.assertRaisesRegex(BOINCProtocolError, f"with success, not {reply_tag}$"):
+                    await getattr(self.client, query)()
+                self.assertFalse(self.client.connected)
+
+
+class ReplyOfAnotherQueryTest(RPCClientTestCase):
+
+    replies = (web_state.results,)
+
+    async def test_the_reply_to_another_query_is_not_taken_for_this_one(self):
+        # It parsed into a list of tasks, returned as if it were the status
+        with self.assertRaisesRegex(BOINCProtocolError, "answered get_cc_status with results"):
+            await self.client.get_cc_status()
+
+
 class HangUpMidwayTest(RPCClientTestCase):
 
     replies = (HangUpMidway("<boinc_gui_rpc_reply><cc_status><task_mode>2</task_mode>"),)
