@@ -6,7 +6,18 @@ The replies are the ones in fixtures/web_state.py, captured from a real client.
 
 from datetime import UTC, datetime, timedelta
 
-from aioboinc import Project
+from aioboinc import (
+    ActiveTaskState,
+    DockerType,
+    MessagePriority,
+    Mode,
+    NetworkStatus,
+    Project,
+    ResultState,
+    RpcReason,
+    SchedulerState,
+    SuspendReason,
+)
 
 from .fake_boinc import RPCClientTestCase
 from .fixtures import web_state
@@ -29,11 +40,40 @@ class CcStatusTest(RPCClientTestCase):
 
     replies = (web_state.cc_status,)
 
-    async def test_every_mode_is_a_number(self):
+    async def test_every_mode_is_a_mode(self):
         status = await self.client.get_cc_status()
-        self.assertEqual(
-            [status[mode] for mode in ("task_mode", "gpu_mode", "network_mode")], [2, 2, 2]
-        )
+        for mode in ("task_mode", "gpu_mode", "network_mode"):
+            with self.subTest(mode):
+                self.assertIs(status[mode], Mode.AUTO)
+                self.assertIs(status[f"{mode}_perm"], Mode.AUTO)
+
+    async def test_the_reasons_and_the_network_are_enums(self):
+        status = await self.client.get_cc_status()
+        self.assertIs(status["task_suspend_reason"], SuspendReason.TIME_OF_DAY)
+        self.assertIs(status["gpu_suspend_reason"], SuspendReason.NOT_SUSPENDED)
+        self.assertIs(status["network_suspend_reason"], SuspendReason.NOT_SUSPENDED)
+        self.assertIs(status["network_status"], NetworkStatus.WANT_DISCONNECT)
+
+    async def test_a_member_is_still_its_number(self):
+        status = await self.client.get_cc_status()
+        self.assertEqual(status["task_suspend_reason"], 8)
+        self.assertFalse(status["gpu_suspend_reason"])
+
+
+class CcStatusUnknownReasonTest(RPCClientTestCase):
+
+    # A newer BOINC client may add a reason
+    replies = (
+        web_state.cc_status.replace(
+            "<task_suspend_reason>8</task_suspend_reason>",
+            "<task_suspend_reason>4200</task_suspend_reason>",
+        ),
+    )
+
+    async def test_a_value_the_enum_does_not_have_is_an_int(self):
+        status = await self.client.get_cc_status()
+        self.assertIs(type(status["task_suspend_reason"]), int)
+        self.assertEqual(status["task_suspend_reason"], 4200)
 
 
 class CcStatusFlagsTest(RPCClientTestCase):
@@ -266,8 +306,8 @@ class HostInfoWithAmdAndAppleGpusTest(RPCClientTestCase):
         self.assertIs(amd["doublePrecision"], True)
         self.assertEqual([apple["ncores"], apple["metal_support"]], [8, 7])
 
-    async def test_the_type_of_docker_is_a_number(self):
-        self.assertEqual((await self.client.get_host_info())["docker_type"], 2)
+    async def test_the_type_of_docker_is_a_docker_type(self):
+        self.assertIs((await self.client.get_host_info())["docker_type"], DockerType.PODMAN)
 
 
 class MessagesTest(RPCClientTestCase):
@@ -280,7 +320,7 @@ class MessagesTest(RPCClientTestCase):
         self.assertEqual(len(messages), 47)
         first = messages[0]
         self.assertEqual(first["seqno"], 1)
-        self.assertEqual(first["pri"], 1)
+        self.assertIs(first["pri"], MessagePriority.INFO)
         self.assertEqual(
             first["body"], "Starting BOINC client version 7.16.3 for x86_64-suse-linux-gnu"
         )
@@ -331,11 +371,15 @@ class ProjectStatusTest(RPCClientTestCase):
 
     async def test_counters_that_look_like_flags_are_numbers(self):
         project = (await self.client.get_project_status())[0]
-        # The BOINC client sends the reason for a pending scheduler request, not just whether there
-        # is one, so 0 has to stay a number rather than become False.
-        for counter in ("sched_rpc_pending", "send_time_stats_log", "send_job_log"):
+        for counter in ("send_time_stats_log", "send_job_log"):
             with self.subTest(counter):
                 self.assertIs(type(getattr(project, counter)), int)
+
+    async def test_a_pending_scheduler_request_is_its_reason(self):
+        project = (await self.client.get_project_status())[0]
+        # The BOINC client sends the reason for a pending scheduler request, not just whether there
+        # is one, so 0 is a reason rather than False.
+        self.assertIs(project.sched_rpc_pending, RpcReason.NONE)
 
     async def test_a_project_compares_equal_to_its_url(self):
         project = (await self.client.get_project_status())[0]
@@ -453,6 +497,12 @@ class ResultsTest(RPCClientTestCase):
         self.assertEqual(task["version_num"], 210)
         self.assertEqual(task["project_url"], "http://www.gpugrid.net/")
         self.assertIsInstance(task["project_url"], Project)
+
+    async def test_the_states_are_enums(self):
+        task = (await self.client.get_results())[0]
+        self.assertIs(task["state"], ResultState.FILES_DOWNLOADED)
+        self.assertIs(task["active_task"]["active_task_state"], ActiveTaskState.UNINITIALIZED)
+        self.assertIs(task["active_task"]["scheduler_state"], SchedulerState.PREEMPTED)
 
     async def test_a_flag_is_true_when_present_and_missing_when_not(self):
         task = (await self.client.get_results())[0]

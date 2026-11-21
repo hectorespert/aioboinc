@@ -8,35 +8,16 @@ https://github.com/BOINC/boinc/wiki/GuiRpcProtocol#requests-and-replies
 
 import asyncio
 import xml.etree.ElementTree as ET
-from enum import Enum
 from hashlib import md5
 from typing import Any
 
+from ._constants import Mode
 from ._parse import Project, parse_generic, parse_project
 from ._raw_client import DEFAULT_TIMEOUT, GUI_RPC_DEFAULT_PORT, _RPCClientRaw
 from ._tag import Tag
 from .exceptions import BOINCAuthError, BOINCClientError, BOINCCommandError, BOINCProtocolError
 
 __all__ = ["BOINCClientError", "Mode", "RPCClient", "init_rpc_client"]
-
-
-class Mode(Enum):
-    """
-    When BOINC may compute, use the GPU or use the network, for set_run_mode(), set_gpu_mode()
-    and set_network_mode()
-
-    Attributes:
-        ALWAYS: Always, whatever the preferences say.
-        NEVER: Never.
-        AUTO: When the preferences allow it.
-        RESTORE: End a temporary mode early and go back to the permanent one. Without a temporary
-            mode, go back to the mode before the last change. The duration is ignored.
-    """
-
-    ALWAYS = Tag.ALWAYS
-    NEVER = Tag.NEVER
-    AUTO = Tag.AUTO
-    RESTORE = Tag.RESTORE
 
 
 async def init_rpc_client(
@@ -289,9 +270,10 @@ class RPCClient:
 
         Returns:
             A dict, with task_mode, task_suspend_reason, gpu_mode, network_mode and network_status
-            among others. The modes are int: 1 always, 2 auto, 3 never. task_mode_delay,
-            gpu_mode_delay and network_mode_delay are the seconds left of a temporary mode, as
-            float, and 0 without one. ams_password_error, disallow_attach and simple_gui_only are
+            among others. The modes and their *_perm are a Mode, the suspend reasons a
+            SuspendReason, NOT_SUSPENDED when it is not, and network_status a NetworkStatus.
+            task_mode_delay, gpu_mode_delay and network_mode_delay are the seconds left of a
+            temporary mode, as float, and 0 without one. ams_password_error, disallow_attach and simple_gui_only are
             bool, and manager_must_quit is there, True, only when an update asks the BOINC Manager
             to quit.
         """
@@ -338,6 +320,7 @@ class RPCClient:
 
         Returns:
             A dict, with domain_name, p_ncpus, p_model, m_nbytes, os_name and coprocs among others.
+            docker_type and docker_compose_type are a DockerType.
         """
         req = ET.Element(Tag.GET_HOST_INFO)
         return parse_generic(await self._request(req, Tag.HOST_INFO))
@@ -363,8 +346,9 @@ class RPCClient:
                 translates. By default they are removed.
 
         Returns:
-            A list with a dict for each message, oldest first, with project, pri, seqno, body and
-            time. project is "" for a message from the client itself.
+            A list with a dict for each message, oldest first, with project, pri, a
+            MessagePriority, seqno, body and time. project is "" for a message from the client
+            itself.
         """
         req = ET.Element(Tag.GET_MESSAGES)
         s = ET.SubElement(req, Tag.SEQNO)
@@ -383,7 +367,8 @@ class RPCClient:
             rsc_backoff_interval are a dict by resource, such as CPU or NVIDIA: the datetime until
             which the project does not ask for work for it, or None, and the seconds it backs off
             for, as float. no_rsc_apps, no_rsc_ams, no_rsc_pref and no_rsc_config are a list of the
-            resources each applies to, empty when none.
+            resources each applies to, empty when none. sched_rpc_pending is a RpcReason, NONE
+            when BOINC is not to contact the project.
         """
         req = ET.Element(Tag.GET_PROJECT_STATUS)
         return [parse_project(c) for c in await self._request(req, Tag.PROJECTS)]
@@ -398,7 +383,9 @@ class RPCClient:
 
         Returns:
             A list with a dict for each task, [] when there is none, with name, project_url,
-            report_deadline and active_task among others. project_url is a Project.
+            report_deadline and active_task among others. project_url is a Project, state a
+            ResultState, and the active_task_state and scheduler_state of active_task an
+            ActiveTaskState and a SchedulerState.
         """
         req = ET.Element(Tag.GET_RESULTS)
         if active_only:
@@ -510,7 +497,7 @@ class RPCClient:
             True, or the reply when BOINC answers something other than success.
         """
         req = ET.Element(Tag.SET_RUN_MODE)
-        ET.SubElement(req, mode.value)
+        ET.SubElement(req, mode.name.lower())
         a = ET.SubElement(req, Tag.DURATION)
         a.text = str(duration)
         return await self._request_auth(req)
@@ -528,7 +515,7 @@ class RPCClient:
             True, or the reply when BOINC answers something other than success.
         """
         req = ET.Element(Tag.SET_NETWORK_MODE)
-        ET.SubElement(req, mode.value)
+        ET.SubElement(req, mode.name.lower())
         a = ET.SubElement(req, Tag.DURATION)
         a.text = str(duration)
         return await self._request_auth(req)
@@ -546,7 +533,7 @@ class RPCClient:
             True, or the reply when BOINC answers something other than success.
         """
         req = ET.Element(Tag.SET_GPU_MODE)
-        ET.SubElement(req, mode.value)
+        ET.SubElement(req, mode.name.lower())
         a = ET.SubElement(req, Tag.DURATION)
         a.text = str(duration)
         return await self._request_auth(req)

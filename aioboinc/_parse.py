@@ -1,26 +1,28 @@
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
+from enum import IntEnum
 from typing import Any
 from xml.etree import ElementTree as ET
 
+from ._constants import (
+    ActiveTaskState,
+    DockerType,
+    MessagePriority,
+    Mode,
+    NetworkStatus,
+    ResultState,
+    RpcReason,
+    SchedulerState,
+    SuspendReason,
+)
 from ._tag import Tag
 
 INTEGER_TAG = {
     Tag.MAJOR,
     Tag.MINOR,
     Tag.RELEASE,
-    Tag.NETWORK_STATUS,
-    Tag.TASK_SUSPEND_REASON,
-    Tag.TASK_MODE,
-    Tag.TASK_MODE_PERM,
-    Tag.GPU_SUSPEND_REASON,
-    Tag.GPU_MODE_PERM,
-    Tag.NETWORK_SUSPEND_REASON,
-    Tag.NETWORK_MODE,
-    Tag.NETWORK_MODE_PERM,
     Tag.MAX_EVENT_LOG_LINES,
     Tag.SEQNO,
-    Tag.PRI,
     Tag.RPC_SEQNO,
     Tag.USERID,
     Tag.TEAMID,
@@ -31,12 +33,9 @@ INTEGER_TAG = {
     Tag.NJOBS_ERROR,
     Tag.VERSION_NUM,
     Tag.EXIT_STATUS,
-    Tag.STATE,
-    Tag.ACTIVE_TASK_STATE,
     Tag.APP_VERSION_NUM,
     Tag.SLOT,
     Tag.PID,
-    Tag.SCHEDULER_STATE,
     Tag.P_NCPUS,
     Tag.COUNT,
     Tag.VENDOR_ID,
@@ -54,10 +53,8 @@ INTEGER_TAG = {
     Tag.AMD_SIMD_PER_COMPUTE_UNIT,
     Tag.AMD_SIMD_WIDTH,
     Tag.NUM_RETRIES,
-    Tag.SCHED_RPC_PENDING,
     Tag.SEND_TIME_STATS_LOG,
     Tag.SEND_JOB_LOG,
-    Tag.GPU_MODE,
     Tag.TIMEZONE,
     Tag.N_USABLE_COPROCS,
     # The PCI address and properties of an NVIDIA GPU, in coprocs
@@ -89,8 +86,6 @@ INTEGER_TAG = {
     # And of an Apple GPU
     Tag.NCORES,
     Tag.METAL_SUPPORT,
-    Tag.DOCKER_TYPE,
-    Tag.DOCKER_COMPOSE_TYPE,
     # The state of a file transfer, as a number
     Tag.STATUS,
 }
@@ -265,6 +260,27 @@ TIME_TAG = {
     Tag.COMPLETED_TIME,
 }
 
+# The enum of each element that is a state or a reason
+ENUM_TAG: dict[str, type[IntEnum]] = {
+    Tag.NETWORK_STATUS: NetworkStatus,
+    Tag.TASK_MODE: Mode,
+    Tag.TASK_MODE_PERM: Mode,
+    Tag.GPU_MODE: Mode,
+    Tag.GPU_MODE_PERM: Mode,
+    Tag.NETWORK_MODE: Mode,
+    Tag.NETWORK_MODE_PERM: Mode,
+    Tag.TASK_SUSPEND_REASON: SuspendReason,
+    Tag.GPU_SUSPEND_REASON: SuspendReason,
+    Tag.NETWORK_SUSPEND_REASON: SuspendReason,
+    Tag.SCHED_RPC_PENDING: RpcReason,
+    Tag.STATE: ResultState,
+    Tag.ACTIVE_TASK_STATE: ActiveTaskState,
+    Tag.SCHEDULER_STATE: SchedulerState,
+    Tag.PRI: MessagePriority,
+    Tag.DOCKER_TYPE: DockerType,
+    Tag.DOCKER_COMPOSE_TYPE: DockerType,
+}
+
 TAG_PARSER: dict[str, Callable[[str], Any]] = {
     Tag.BODY: lambda x: x.replace("<![CDATA[", "").replace("]]>", "").strip(),
     Tag.PROJECT_URL: lambda x: Project(master_url=x)
@@ -287,6 +303,19 @@ def TIME_TAG_PARSER(x: str) -> datetime | None:
 
 def TIMEDELTA_TAG_PARSER(x: str) -> timedelta:
     return timedelta(seconds=float(x))
+
+
+def ENUM_TAG_PARSER(enum: type[IntEnum]) -> Callable[[str], int]:
+    def parse(x: str) -> int:
+        value = int(x)
+        try:
+            return enum(value)
+        except ValueError:
+            # A value the enum does not have, such as a new reason in a newer BOINC client, is still
+            # a number, not an error
+            return value
+
+    return parse
 
 
 def BOOL_TAG_PARSER(x: str) -> bool:
@@ -321,6 +350,7 @@ _PARSERS: list[tuple[Callable[[str], Any], set[str]]] = [
 ]
 for parser_func, tags in _PARSERS:
     TAG_PARSER.update((tag, parser_func) for tag in tags)
+TAG_PARSER.update((tag, ENUM_TAG_PARSER(enum)) for tag, enum in ENUM_TAG.items())
 
 
 def parse_generic(e: ET.Element):

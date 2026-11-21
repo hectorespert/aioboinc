@@ -16,6 +16,8 @@ TAG_SETS = {
         "TIME_TAG",
         "TIMEDELTA_TAG",
         "LIST_TAG",
+        # A dict of the enum by tag
+        "ENUM_TAG",
         # A dict of the parser of the value by tag
         "BY_RESOURCE_TAG",
         "RESOURCE_NAMES_TAG",
