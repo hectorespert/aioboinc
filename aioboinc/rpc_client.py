@@ -15,7 +15,7 @@ from ._constants import Mode
 from ._parse import Project, parse_generic, parse_project
 from ._raw_client import DEFAULT_TIMEOUT, GUI_RPC_DEFAULT_PORT, _RPCClientRaw
 from ._tag import Tag
-from ._types import CcStatus, DiskUsage, Version
+from ._types import CcStatus, DiskUsage, HostInfo, Version
 from .exceptions import BOINCAuthError, BOINCClientError, BOINCCommandError, BOINCProtocolError
 
 __all__ = ["BOINCClientError", "Mode", "RPCClient", "init_rpc_client"]
@@ -351,12 +351,13 @@ class RPCClient:
         req = ET.Element(Tag.GET_FILE_TRANSFERS)
         return parse_generic(await self._request(req, Tag.FILE_TRANSFERS))
 
-    async def get_host_info(self):
+    async def get_host_info(self) -> HostInfo:
         """
         Get the description of the host: its CPU, memory, disk, operating system and GPUs
 
         Returns:
-            A dict, with domain_name, p_ncpus, p_model, m_nbytes, os_name and coprocs among others.
+            A HostInfo, a dict with domain_name, p_ncpus, p_model, m_nbytes, os_name and coprocs
+            among others.
             p_calculated is when the CPU benchmarks last ran, as datetime in UTC, or None if never.
             coprocs is a dict of the GPUs by the name of their resource, as in the rsc_backoff_time
             of a project: NVIDIA, ATI, intel_gpu or apple_gpu. There is one of each kind, with how

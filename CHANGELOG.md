@@ -6,6 +6,7 @@
   `get_disk_usage()`: `Version`, `CcStatus`, `DiskUsage` and `ProjectDiskUsage`, importable from
   `aioboinc`. They are `TypedDict`, so the replies are still the same dicts, and an editor or mypy
   now knows their keys and the type of each.
+- **Added** the type of the reply of `get_host_info()`: `HostInfo`, with `WslDistro` and `WslGpu`.
 - **Fixed** `p_calculated` of `get_host_info()` coming as a `float`. It is when the CPU benchmarks
   last ran, so it is now a `datetime` in UTC, or `None` if they never ran, like the other times.
 - **Changed** `coprocs` of `get_host_info()` from a list to a dict by the name of the resource, as
