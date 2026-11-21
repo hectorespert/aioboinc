@@ -8,12 +8,17 @@
   now knows their keys and the type of each.
 - **Added** the type of the reply of `get_host_info()`: `HostInfo`, with `WslDistro` and `WslGpu`.
 - **Added** the types of the attributes of `Project`, from `get_project_status()`.
+- **Added** the type of the reply of `get_results()`: `Result`, with `ActiveTask`.
 - **Changed** the flags of a `Project` that BOINC sends only when they are set, such as
   `suspended_via_gui`, `dont_request_more_work` or `attached_via_acct_mgr`, to be `False` when it
   does not, instead of raising `AttributeError`. The values it sends only sometimes,
   `download_backoff`, `upload_backoff`, `ams_resource_share_new`, `venue`, and `disk_usage` and
   `disk_share` before BOINC 7.16.8, are `None` then. `getattr(project, "suspended_via_gui", False)`
   can be `project.suspended_via_gui`.
+- **Changed** the flags of a task that BOINC sends only when they are set, such as
+  `suspended_via_gui`, `ready_to_report` or `scheduler_wait`, and those of its `active_task`, such
+  as `too_large`, to be there, `False`, when it does not. `"ready_to_report" in task` is now always
+  true; `task["ready_to_report"]` says whether it is.
 - **Fixed** `p_calculated` of `get_host_info()` coming as a `float`. It is when the CPU benchmarks
   last ran, so it is now a `datetime` in UTC, or `None` if they never ran, like the other times.
 - **Changed** `coprocs` of `get_host_info()` from a list to a dict by the name of the resource, as
