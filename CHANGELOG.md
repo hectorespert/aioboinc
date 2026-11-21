@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- **Added** `update_project()`, `suspend_project()`, `resume_project()`, `no_new_tasks()` and
+  `allow_new_tasks()`, which take a `Project` from `get_project_status()` or its master URL, and
+  raise `BOINCCommandError` for a project the BOINC client is not attached to.
+
 ## 0.9.0
 
 - **Added** `Mode`, `RPCClient` and `Project` to the names importable from `aioboinc`, as in

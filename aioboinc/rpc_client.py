@@ -447,6 +447,84 @@ class RPCClient:
         _append_project_element(req, project_url, name)
         return await self._request_auth(req)
 
+    async def update_project(self, project: Project | str):
+        """
+        Contact the project now, to report the tasks done and ask for work, as Update in the BOINC
+        Manager, even if it is backed off
+
+        Args:
+            project: The project, as a Project from get_project_status() or its master URL.
+
+        Returns:
+            True, or the reply when BOINC answers something other than success, as for
+            evaluate_reply(). A project the BOINC client is not attached to raises
+            BOINCCommandError.
+        """
+        return await self._project_op(Tag.PROJECT_UPDATE, project)
+
+    async def suspend_project(self, project: Project | str):
+        """
+        Stop computing and transferring the tasks of a project until resume_project()
+
+        Args:
+            project: The project, as a Project from get_project_status() or its master URL.
+
+        Returns:
+            True, or the reply when BOINC answers something other than success, as for
+            evaluate_reply(). A project the BOINC client is not attached to raises
+            BOINCCommandError.
+        """
+        return await self._project_op(Tag.PROJECT_SUSPEND, project)
+
+    async def resume_project(self, project: Project | str):
+        """
+        Resume a project suspended by suspend_project()
+
+        Args:
+            project: The project, as a Project from get_project_status() or its master URL.
+
+        Returns:
+            True, or the reply when BOINC answers something other than success, as for
+            evaluate_reply(). A project the BOINC client is not attached to raises
+            BOINCCommandError.
+        """
+        return await self._project_op(Tag.PROJECT_RESUME, project)
+
+    async def no_new_tasks(self, project: Project | str):
+        """
+        Stop asking a project for work, as No new tasks in the BOINC Manager, until
+        allow_new_tasks(). The tasks it has are still computed and reported.
+
+        Args:
+            project: The project, as a Project from get_project_status() or its master URL.
+
+        Returns:
+            True, or the reply when BOINC answers something other than success, as for
+            evaluate_reply(). A project the BOINC client is not attached to raises
+            BOINCCommandError.
+        """
+        return await self._project_op(Tag.PROJECT_NOMOREWORK, project)
+
+    async def allow_new_tasks(self, project: Project | str):
+        """
+        Ask a project for work again after no_new_tasks(), as Allow new tasks in the BOINC Manager
+
+        Args:
+            project: The project, as a Project from get_project_status() or its master URL.
+
+        Returns:
+            True, or the reply when BOINC answers something other than success, as for
+            evaluate_reply(). A project the BOINC client is not attached to raises
+            BOINCCommandError.
+        """
+        return await self._project_op(Tag.PROJECT_ALLOWMOREWORK, project)
+
+    async def _project_op(self, tag: str, project: Project | str):
+        req = ET.Element(tag)
+        url = ET.SubElement(req, Tag.PROJECT_URL)
+        url.text = str(project)
+        return await self._request_auth(req)
+
     async def quit(self):
         """
         Stop the BOINC client, and with it every task
