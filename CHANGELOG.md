@@ -8,6 +8,10 @@
   now knows their keys and the type of each.
 - **Fixed** `p_calculated` of `get_host_info()` coming as a `float`. It is when the CPU benchmarks
   last ran, so it is now a `datetime` in UTC, or `None` if they never ran, like the other times.
+- **Changed** `coprocs` of `get_host_info()` from a list to a dict by the name of the resource, as
+  in `rsc_backoff_time` of a project: `NVIDIA`, `ATI`, `intel_gpu` or `apple_gpu`. The list did not
+  say which kind of GPU each one was. `info["coprocs"][0]` becomes, for example,
+  `info["coprocs"]["NVIDIA"]`.
 
 ## 0.11.0
 

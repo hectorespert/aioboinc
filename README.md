@@ -109,7 +109,7 @@ To read the state of the BOINC client:
 | `get_daily_xfer_history()` | The bytes uploaded and downloaded each day, newest first, as a list of dicts with `when`, a `date`, `up` and `down` |
 | `get_disk_usage()` | The disk space each project uses, under `project`, and the totals of the disk, in bytes |
 | `get_file_transfers()` | A list of the uploads and downloads |
-| `get_host_info()` | The description of the host: CPU, memory, disk, operating system, GPUs |
+| `get_host_info()` | The description of the host: CPU, memory, disk, operating system, and the GPUs, under `coprocs` by the name of their resource, such as `NVIDIA` or `ATI` |
 | `get_message_count()` | The sequence number of the newest message of the event log |
 | `get_messages(seqno=0, translatable=False)` | A list of the messages newer than `seqno` |
 | `get_newer_version()` | The newest version of the BOINC client, under `newer_version`, `""` when the one running is the newest, and the page to download it from, under `download_url`. BOINC asks the BOINC website first, so it may take seconds |

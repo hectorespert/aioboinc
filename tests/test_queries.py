@@ -307,8 +307,8 @@ class HostInfoTest(RPCClientTestCase):
     async def test_a_flag_is_false_when_0_and_true_when_1(self):
         info = await self.client.get_host_info()
         self.assertIs(info["p_vm_extensions_disabled"], False)
-        self.assertIs(info["coprocs"][0]["have_opencl"], True)
-        self.assertIs(info["coprocs"][0]["have_cuda"], True)
+        self.assertIs(info["coprocs"]["NVIDIA"]["have_opencl"], True)
+        self.assertIs(info["coprocs"]["NVIDIA"]["have_cuda"], True)
         self.assertIs(info["wsl_available"], False)
 
     async def test_numbers_are_numbers(self):
@@ -321,12 +321,46 @@ class HostInfoTest(RPCClientTestCase):
         self.assertEqual(info["p_calculated"], datetime.fromtimestamp(1586431995.189977, UTC))
 
     async def test_the_properties_of_a_gpu_are_numbers(self):
-        gpu = (await self.client.get_host_info())["coprocs"][0]
+        gpu = (await self.client.get_host_info())["coprocs"]["NVIDIA"]
         self.assertEqual(gpu["available_ram"], 4167041024.0)
         self.assertEqual(gpu["totalGlobalMem"], 4294967295.0)
         self.assertEqual(gpu["warpSize"], 32)
         self.assertEqual(gpu["clockRate"], 1708500)
         self.assertEqual(gpu["pci_info"]["bus_id"], 1)
+
+
+class HostInfoWithOtherCoprocessorsTest(RPCClientTestCase):
+
+    # As COPROC_INTEL::write_xml() and COPROC::write_xml() in lib/coproc.cpp write them, the second
+    # for a kind of coprocessor BOINC has no element of its own for
+    replies = (
+        """<boinc_gui_rpc_reply>
+<host_info>
+    <coprocs>
+<coproc_intel_gpu>
+   <count>1</count>
+   <name>Intel(R) UHD Graphics 630</name>
+</coproc_intel_gpu>
+<coproc>
+   <type>Some vendor GPU</type>
+   <count>2</count>
+   <peak_flops>0.000000</peak_flops>
+</coproc>
+    </coprocs>
+</host_info>
+</boinc_gui_rpc_reply>
+""",
+        "<boinc_gui_rpc_reply>\n<host_info>\n    <coprocs>\n    </coprocs>\n</host_info>\n</boinc_gui_rpc_reply>",
+    )
+
+    async def test_each_is_under_the_name_of_its_resource(self):
+        coprocs = (await self.client.get_host_info())["coprocs"]
+        self.assertEqual(list(coprocs), ["intel_gpu", "Some vendor GPU"])
+        self.assertEqual(coprocs["Some vendor GPU"]["count"], 2)
+
+    async def test_no_coprocessors_is_an_empty_dict(self):
+        await self.client.get_host_info()
+        self.assertEqual((await self.client.get_host_info())["coprocs"], {})
 
 
 class MessageCountTest(RPCClientTestCase):
@@ -381,15 +415,21 @@ class HostInfoWithAmdAndAppleGpusTest(RPCClientTestCase):
 """,
     )
 
+    async def test_the_gpus_are_by_resource(self):
+        # The names of the resources in rsc_backoff_time of a project, among others
+        self.assertEqual(list((await self.client.get_host_info())["coprocs"]), ["ATI", "apple_gpu"])
+
     async def test_flags_of_a_gpu_are_flags(self):
-        amd, apple = (await self.client.get_host_info())["coprocs"]
+        coprocs = (await self.client.get_host_info())["coprocs"]
+        amd, apple = coprocs["ATI"], coprocs["apple_gpu"]
         self.assertIs(amd["have_cal"], False)
         self.assertIs(amd["have_opencl"], True)
         self.assertIs(apple["have_metal"], True)
         self.assertIs(apple["have_opencl"], False)
 
     async def test_properties_of_a_gpu_are_numbers(self):
-        amd, apple = (await self.client.get_host_info())["coprocs"]
+        coprocs = (await self.client.get_host_info())["coprocs"]
+        amd, apple = coprocs["ATI"], coprocs["apple_gpu"]
         self.assertEqual(
             [amd[p] for p in ("localRAM", "engineClock", "wavefrontSize", "numberOfSIMD", "target")],
             [8192, 2100, 64, 36, 0],

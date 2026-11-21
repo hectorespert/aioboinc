@@ -358,6 +358,9 @@ class RPCClient:
         Returns:
             A dict, with domain_name, p_ncpus, p_model, m_nbytes, os_name and coprocs among others.
             p_calculated is when the CPU benchmarks last ran, as datetime in UTC, or None if never.
+            coprocs is a dict of the GPUs by the name of their resource, as in the rsc_backoff_time
+            of a project: NVIDIA, ATI, intel_gpu or apple_gpu. There is one of each kind, with how
+            many there are in count.
             docker_type and docker_compose_type are a DockerType.
         """
         req = ET.Element(Tag.GET_HOST_INFO)
