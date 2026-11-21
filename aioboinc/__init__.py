@@ -1,3 +1,4 @@
+from ._parse import Project
 from .exceptions import (
     BOINCAuthError,
     BOINCClientError,
@@ -7,7 +8,7 @@ from .exceptions import (
     BOINCProtocolError,
     BOINCTimeoutError,
 )
-from .rpc_client import init_rpc_client
+from .rpc_client import Mode, RPCClient, init_rpc_client
 
 __all__ = [
     "BOINCAuthError",
@@ -17,5 +18,8 @@ __all__ = [
     "BOINCError",
     "BOINCProtocolError",
     "BOINCTimeoutError",
+    "Mode",
+    "Project",
+    "RPCClient",
     "init_rpc_client",
 ]

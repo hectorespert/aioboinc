@@ -9,6 +9,7 @@ import unittest
 from hashlib import md5
 from unittest import mock
 
+import aioboinc
 from aioboinc import (
     BOINCAuthError,
     BOINCClientError,
@@ -17,8 +18,9 @@ from aioboinc import (
     BOINCError,
     BOINCProtocolError,
     BOINCTimeoutError,
+    Mode,
+    RPCClient,
 )
-from aioboinc.rpc_client import Mode, RPCClient
 
 from .fake_boinc import HANG_UP, NO_REPLY, HangUpMidway, Late, RPCClientTestCase, Split
 from .fixtures import web_state
@@ -332,6 +334,21 @@ class SplitReplyTest(RPCClientTestCase):
         self.assertEqual(status["task_mode"], 2)
         self.assertEqual(status["gpu_mode"], 3)
         self.assertTrue(self.client.connected)
+
+
+class ExportsTest(unittest.TestCase):
+
+    def test_the_names_a_caller_needs_come_from_the_package(self):
+        from aioboinc import _parse, rpc_client
+
+        self.assertIs(aioboinc.Mode, rpc_client.Mode)
+        self.assertIs(aioboinc.RPCClient, rpc_client.RPCClient)
+        self.assertIs(aioboinc.Project, _parse.Project)
+
+    def test_every_exported_name_is_there(self):
+        for name in aioboinc.__all__:
+            with self.subTest(name=name):
+                self.assertTrue(hasattr(aioboinc, name))
 
 
 class ExceptionsTest(unittest.TestCase):

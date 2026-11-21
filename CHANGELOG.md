@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- **Added** `Mode`, `RPCClient` and `Project` to the names importable from `aioboinc`, as in
+  `from aioboinc import Mode`. They were only in the modules `aioboinc.rpc_client` and
+  `aioboinc._parse`, the second private; importing them from there still works.
+
 ## 0.8.0
 
 - **Fixed** numbers and times that came as strings, because the parser did not know their
