@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.9.0
 
 - **Added** `Mode`, `RPCClient` and `Project` to the names importable from `aioboinc`, as in
   `from aioboinc import Mode`. They were only in the modules `aioboinc.rpc_client` and
