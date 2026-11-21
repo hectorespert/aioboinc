@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.10.0
 
 - **Added** `update_project()`, `suspend_project()`, `resume_project()`, `no_new_tasks()` and
   `allow_new_tasks()`, which take a `Project` from `get_project_status()` or its master URL, and
