@@ -67,7 +67,6 @@ line-length = 120
 target-version = "py311"
 extend-exclude = [
     "tests/fixtures/web_state.py",  # replies captured from a real client, kept byte for byte
-    "scripts",  # upstream's one-off generator for _constants.py, not shipped
 ]
 
 [tool.ruff.lint]

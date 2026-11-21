@@ -118,7 +118,13 @@ The replies are dicts and lists keyed by the names of the elements BOINC sends, 
 as `int` or `float`, flags as `bool`, times as `datetime` in UTC, or `None` when they are not set,
 and the CPU and elapsed times of a task, and the time so far and left of a transfer, as
 `timedelta`. Other durations, such as the `*_mode_delay` of `get_cc_status()` or the backoffs, are
-`float` seconds. The type depends on the element, and an
+`float` seconds. States and reasons are enums importable from `aioboinc`, which compare equal to
+their number: the modes of `get_cc_status()` are a `Mode`, its suspend reasons a `SuspendReason`
+and `network_status` a `NetworkStatus`; the `state` of a task is a `ResultState`, and its
+`active_task_state` and `scheduler_state` an `ActiveTaskState` and a `SchedulerState`; the `pri` of
+a message is a `MessagePriority`, the `sched_rpc_pending` of a project a `RpcReason`, and the
+`docker_type` of the host a `DockerType`. A number the enum does not have, from a newer BOINC
+client, comes as an `int`. The type depends on the element, and an
 element the parser does not know comes as a `str`. What a project sends once for each resource,
 such as CPU or NVIDIA, is a dict by the name of the resource, as `rsc_backoff_time`, or a list of
 the names, as `no_rsc_apps`.

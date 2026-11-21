@@ -13,6 +13,16 @@
   returned `""` or an empty list. Each query now checks the element of its reply, such as
   `<cc_status>` for `get_cc_status()`, and raises `BOINCProtocolError` otherwise, dropping the
   connection like the other protocol errors.
+- **Changed** the states and reasons in the replies from `int` to enums, importable from
+  `aioboinc`: `Mode` for `task_mode`, `gpu_mode`, `network_mode` and their `*_perm`,
+  `SuspendReason` for the suspend reasons, `NetworkStatus`, `ResultState` for the `state` of a
+  task, `ActiveTaskState`, `SchedulerState`, `MessagePriority` for `pri`, `RpcReason` for
+  `sched_rpc_pending`, and `DockerType`. They are `IntEnum`, so they still compare equal to the
+  number, and a number an enum does not have, from a newer BOINC client, stays an `int`. `Mode` is
+  now an `IntEnum` too, with the numbers BOINC uses, so `Mode.ALWAYS.value` is `1`, not
+  `"always"`.
+- **Removed** the module `aioboinc._constants` with its `Constants` and `SUSPEND_REASON`, which
+  were not used, and the script that generated them. The enums above replace them.
 
 ## 0.8.0
 
