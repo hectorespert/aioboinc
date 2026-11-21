@@ -141,6 +141,10 @@ To control it, after `authorize()`. Each returns `True` when BOINC answers with 
 | `resume_project(project)` | Resumes a suspended project |
 | `no_new_tasks(project)` | Stops asking a project for work; the tasks it has are still computed |
 | `allow_new_tasks(project)` | Asks a project for work again |
+| `reset_project(project)` | Aborts the tasks of a project and deletes its files. It cannot be undone |
+| `detach_project(project)` | Detaches from a project, losing its tasks. It cannot be undone |
+| `detach_project_when_done(project)` | Detaches from a project once its tasks are done and reported, asking it for no more |
+| `dont_detach_project_when_done(project)` | Cancels `detach_project_when_done()` |
 | `set_run_mode(mode, duration=0)` | Sets when BOINC computes: `Mode.ALWAYS`, `Mode.AUTO`, `Mode.NEVER`, or `Mode.RESTORE` to end a temporary mode. A `duration` in seconds makes it temporary |
 | `set_gpu_mode(mode, duration=0)` | The same for the GPU |
 | `set_network_mode(mode, duration=0)` | The same for the network |

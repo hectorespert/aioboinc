@@ -5,6 +5,9 @@
 - **Added** `update_project()`, `suspend_project()`, `resume_project()`, `no_new_tasks()` and
   `allow_new_tasks()`, which take a `Project` from `get_project_status()` or its master URL, and
   raise `BOINCCommandError` for a project the BOINC client is not attached to.
+- **Added** `reset_project()`, `detach_project()`, `detach_project_when_done()` and
+  `dont_detach_project_when_done()`, which take a project the same way. Resetting and detaching
+  lose the work done on its tasks; detaching when done keeps it.
 
 ## 0.9.0
 
