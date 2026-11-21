@@ -348,6 +348,7 @@ class WrongReplyTest(RPCClientTestCase):
     QUERIES = {
         "exchange_versions": "server_version",
         "get_cc_status": "cc_status",
+        "get_daily_xfer_history": "daily_xfers",
         "get_disk_usage": "disk_usage_summary",
         "get_file_transfers": "file_transfers",
         "get_host_info": "host_info",

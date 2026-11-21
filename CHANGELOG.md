@@ -15,6 +15,8 @@
   `True` and `notices` holds all of them, to replace those got before.
 - **Added** `get_statistics()`, which returns the credit of the user and of the host for each day,
   by project, as the Statistics tab of the BOINC Manager draws it.
+- **Added** `get_daily_xfer_history()`, which returns the bytes uploaded and downloaded each day,
+  with the day as a `date`.
 - **Fixed** text that is not ASCII, such as accented letters, coming garbled, as `BiologÃ­a` for
   `Biología`. The BOINC client writes UTF-8, which was read as ISO-8859-1. Replies are now read as
   UTF-8, with a byte that is not UTF-8 becoming `\ufffd` instead of failing the reply, and requests

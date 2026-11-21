@@ -280,6 +280,19 @@ class RPCClient:
         req = ET.Element(Tag.GET_CC_STATUS)
         return parse_generic(await self._request(req, Tag.CC_STATUS))
 
+    async def get_daily_xfer_history(self):
+        """
+        Get how many bytes BOINC has uploaded and downloaded each day
+
+        Returns:
+            A list with a dict for each day with transfers, newest first, as BOINC keeps them, with
+            when, the date in the time zone of the host BOINC runs on, and up and down, the bytes
+            uploaded and downloaded, as float. BOINC keeps a year of them.
+        """
+        req = ET.Element(Tag.GET_DAILY_XFER_HISTORY)
+        # The days come as repeated <dx> elements, which a dict keeps only the last of
+        return [parse_generic(c) for c in await self._request(req, Tag.DAILY_XFERS)]
+
     async def get_disk_usage(self):
         """
         Get how much of the disk BOINC and each project use, in bytes
