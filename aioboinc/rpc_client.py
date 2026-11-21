@@ -357,6 +357,33 @@ class RPCClient:
             ET.SubElement(req, Tag.TRANSLATABLE)
         return parse_generic(await self._request(req, Tag.MSGS))
 
+    async def get_statistics(self):
+        """
+        Get the credit of the user and of the host for each day, by project, as the Statistics tab
+        of the BOINC Manager draws it
+
+        Returns:
+            A list with a dict for each project, with:
+                master_url: The URL of the project.
+                daily_statistics: A list with a dict for each day, oldest first, with day, the
+                    datetime in UTC of the midnight that begins it, and user_total_credit,
+                    user_expavg_credit, host_total_credit and host_expavg_credit, as float, as
+                    of the last reply of the project's scheduler that day. Only the days with a
+                    reply are there, from the last save_stats_days of the BOINC configuration,
+                    30 by default. When older days are dropped, the last of them is kept, dated
+                    the first day of that window.
+        """
+        req = ET.Element(Tag.GET_STATISTICS)
+        # The days come as repeated <daily_statistics> elements, which a dict keeps only the last
+        # of, so they are gathered in a list.
+        return [
+            {
+                Tag.MASTER_URL: p.findtext(Tag.MASTER_URL, ""),
+                Tag.DAILY_STATISTICS: [parse_generic(d) for d in p.findall(Tag.DAILY_STATISTICS)],
+            }
+            for p in await self._request(req, Tag.STATISTICS)
+        ]
+
     async def get_notices(self, seqno=0):
         """
         Get the notices newer than a sequence number, as the Notices tab of the BOINC Manager

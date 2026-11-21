@@ -258,6 +258,8 @@ TIME_TAG = {
     Tag.NEXT_REQUEST_TIME,
     Tag.PROJECT_FILES_DOWNLOADED_TIME,
     Tag.COMPLETED_TIME,
+    # The midnight in UTC that begins a day of the statistics
+    Tag.DAY,
     # Of a notice
     Tag.CREATE_TIME,
     Tag.ARRIVAL_TIME,
