@@ -272,6 +272,20 @@ class RPCClient:
         req = ET.Element(Tag.EXCHANGE_VERSIONS)
         return parse_generic(await self._request(req, Tag.SERVER_VERSION))
 
+    async def get_acct_mgr_info(self):
+        """
+        Get the account manager the BOINC client uses to choose its projects, such as BAM! or
+        Science United, if any
+
+        Returns:
+            A dict with acct_mgr_url and acct_mgr_name, "" without an account manager.
+            have_credentials is there, True, only when BOINC has the login to it, and
+            cookie_required, with cookie_failure_url, only when the account manager needs a
+            cookie from its website.
+        """
+        req = ET.Element(Tag.ACCT_MGR_INFO)
+        return parse_generic(await self._request(req, Tag.ACCT_MGR_INFO))
+
     async def get_cc_status(self):
         """
         Get the state of the BOINC client: its modes, why it is suspended, and its network
