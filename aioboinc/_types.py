@@ -418,3 +418,242 @@ class AcctMgrInfo(TypedDict):
     cookie_required: bool
     # Only when it needs a cookie
     cookie_failure_url: NotRequired[str]
+
+
+class FileRef(TypedDict):
+    """
+    A file of an app version or a workunit, in get_state()
+    """
+
+    file_name: str
+    # The name the app opens it by, when it is not file_name
+    open_name: NotRequired[str]
+    # False when BOINC does not send them
+    main_program: bool
+    copy_file: bool
+    optional: bool
+
+
+class CoprocUsage(TypedDict):
+    """
+    The GPUs an app version or a workunit uses, in get_state()
+    """
+
+    # The name of the resource, such as NVIDIA or ATI
+    type: str
+    # How many, which may be a fraction
+    count: float
+
+
+class App(TypedDict):
+    """
+    An app of a project, in get_state()
+    """
+
+    # Its project, with only its master_url, equal to the URL
+    project_url: Project
+    name: str
+    user_friendly_name: str
+    non_cpu_intensive: bool
+
+
+class AppVersion(TypedDict):
+    """
+    A version of an app, in get_state()
+    """
+
+    # Its project, with only its master_url, equal to the URL
+    project_url: Project
+    app_name: str
+    version_num: int
+    platform: str
+    # Only when they are not empty
+    plan_class: NotRequired[str]
+    api_version: NotRequired[str]
+    cmdline: NotRequired[str]
+    file_prefix: NotRequired[str]
+    # Only when it has files
+    file_ref: NotRequired[list[FileRef]]
+    avg_ncpus: float
+    flops: float
+    # Only when it uses a GPU
+    coproc: NotRequired[CoprocUsage]
+    # Bytes of GPU memory, only when it needs some
+    gpu_ram: NotRequired[float]
+    # False when BOINC does not send them
+    dont_throttle: bool
+    is_wrapper: bool
+    needs_network: bool
+
+
+class JobKeyword(TypedDict):
+    """
+    A keyword of a workunit, in get_state()
+    """
+
+    name: str
+    description: str
+    parent: int
+    level: int
+    # A number, as a str: the same element is a str in a Notice
+    category: str
+
+
+class Workunit(TypedDict):
+    """
+    A workunit, the job a task computes, in get_state()
+    """
+
+    # Its project, with only its master_url, equal to the URL
+    project_url: Project
+    name: str
+    app_name: str
+    version_num: int
+    # The estimated and the most floating point operations, and the most bytes of memory and disk
+    rsc_fpops_est: float
+    rsc_fpops_bound: float
+    rsc_memory_bound: float
+    rsc_disk_bound: float
+    # Only when there are any
+    command_line: NotRequired[str]
+    file_ref: NotRequired[list[FileRef]]
+    sub_appname: NotRequired[str]
+    # What it uses, only when the project says
+    avg_ncpus: NotRequired[float]
+    flops: NotRequired[float]
+    coproc: NotRequired[CoprocUsage]
+    gpu_ram: NotRequired[float]
+    job_keywords: NotRequired[list[JobKeyword]]
+
+
+class NetStats(TypedDict):
+    """
+    The use of the network, in get_state()
+    """
+
+    # The most and the average bytes per second up and down, and when the averages were updated
+    bwup: float
+    avg_up: float
+    avg_time_up: datetime | None
+    bwdown: float
+    avg_down: float
+    avg_time_down: datetime | None
+
+
+class TimeStats(TypedDict):
+    """
+    How much the BOINC client runs and computes, in get_state()
+    """
+
+    # Fractions of the time the client runs, is connected, may compute and use the network, and
+    # computes on the CPU and the GPU
+    on_frac: float
+    connected_frac: float
+    cpu_and_network_available_frac: float
+    active_frac: float
+    gpu_active_frac: float
+    # When the client started, and when it first did
+    client_start_time: datetime | None
+    total_start_time: datetime | None
+    # Seconds the client has run, and computed on the CPU and the GPU
+    total_duration: float
+    total_active_duration: float
+    total_gpu_active_duration: float
+    # The time of the reply
+    now: datetime | None
+    # Seconds the client ran before it started this time, and has computed since
+    previous_uptime: float
+    session_active_duration: float
+    session_gpu_active_duration: float
+
+
+class DayPrefs(TypedDict):
+    """
+    The hours of a day of the week of the global preferences, when it has its own
+    """
+
+    # 0 is Sunday
+    day_of_week: int
+    # Only those the day has its own of
+    start_hour: NotRequired[float]
+    end_hour: NotRequired[float]
+    net_start_hour: NotRequired[float]
+    net_end_hour: NotRequired[float]
+
+
+class GlobalPreferences(TypedDict):
+    """
+    The computing preferences in use, in get_state()
+    """
+
+    source_project: str
+    mod_time: datetime | None
+    battery_charge_min_pct: float
+    battery_max_temperature: float
+    run_on_batteries: bool
+    run_if_user_active: bool
+    run_gpu_if_user_active: bool
+    suspend_if_no_recent_input: float
+    suspend_cpu_usage: float
+    start_hour: float
+    end_hour: float
+    net_start_hour: float
+    net_end_hour: float
+    leave_apps_in_memory: bool
+    confirm_before_connecting: bool
+    hangup_if_dialed: bool
+    dont_verify_images: bool
+    work_buf_min_days: float
+    work_buf_additional_days: float
+    max_ncpus_pct: float
+    niu_max_ncpus_pct: float
+    niu_cpu_usage_limit: float
+    niu_suspend_cpu_usage: float
+    cpu_scheduling_period_minutes: float
+    disk_interval: float
+    disk_max_used_gb: float
+    disk_max_used_pct: float
+    disk_min_free_gb: float
+    vm_max_used_pct: float
+    ram_max_used_busy_pct: float
+    ram_max_used_idle_pct: float
+    idle_time_to_run: float
+    max_bytes_sec_up: float
+    max_bytes_sec_down: float
+    cpu_usage_limit: float
+    daily_xfer_limit_mb: float
+    daily_xfer_period_days: int
+    override_file_present: bool
+    network_wifi_only: bool
+    # Only when the preferences limit the CPUs to a number
+    max_cpus: NotRequired[int]
+    # Only the days with their own hours
+    day_prefs: NotRequired[list[DayPrefs]]
+
+
+class ClientState(TypedDict):
+    """
+    The whole state of the BOINC client, from get_state()
+    """
+
+    host_info: HostInfo
+    net_stats: NetStats
+    time_stats: TimeStats
+    projects: list[Project]
+    apps: list[App]
+    app_versions: list[AppVersion]
+    workunits: list[Workunit]
+    results: list[Result]
+    platform_name: str
+    core_client_major_version: int
+    core_client_minor_version: int
+    core_client_release: int
+    executing_as_daemon: bool
+    # The platforms the host runs apps of, platform_name first
+    platforms: list[str]
+    global_preferences: GlobalPreferences
+    # Whether the host has an NVIDIA and an AMD GPU, for older BOINC Managers
+    have_cuda: bool
+    have_ati: bool
+    # Only when the host has one
+    host_venue: NotRequired[str]

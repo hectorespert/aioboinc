@@ -37,7 +37,6 @@ INTEGER_TAG = {
     Tag.SLOT,
     Tag.PID,
     Tag.P_NCPUS,
-    Tag.COUNT,
     Tag.VENDOR_ID,
     Tag.HALF_FP_CONFIG,
     Tag.SINGLE_FP_CONFIG,
@@ -90,6 +89,17 @@ INTEGER_TAG = {
     Tag.STATUS,
     # The version of the BOINC WSL distribution, in the wsl of get_host_info()
     Tag.DISTRO_VERSION,
+    # In get_state()
+    Tag.CORE_CLIENT_MAJOR_VERSION,
+    Tag.CORE_CLIENT_MINOR_VERSION,
+    Tag.CORE_CLIENT_RELEASE,
+    # Of a keyword of a workunit
+    Tag.PARENT,
+    Tag.LEVEL,
+    # Of the global preferences
+    Tag.DAILY_XFER_PERIOD_DAYS,
+    Tag.MAX_CPUS,
+    Tag.DAY_OF_WEEK,
 }
 
 FLOAT_TAG = {
@@ -144,6 +154,60 @@ FLOAT_TAG = {
     # Bytes sent and received on a day of the transfer history
     Tag.UP,
     Tag.DOWN,
+    # The CPUs and the FLOPS an app version or a workunit uses, and the bytes of GPU memory
+    Tag.AVG_NCPUS,
+    Tag.FLOPS,
+    Tag.GPU_RAM,
+    # The estimated and the most operations, memory and disk of a workunit
+    Tag.RSC_FPOPS_EST,
+    Tag.RSC_FPOPS_BOUND,
+    Tag.RSC_MEMORY_BOUND,
+    Tag.RSC_DISK_BOUND,
+    # The most and the average bytes per second of the network, in net_stats of get_state()
+    Tag.BWUP,
+    Tag.AVG_UP,
+    Tag.BWDOWN,
+    Tag.AVG_DOWN,
+    # In time_stats of get_state(): fractions of the time, and durations in seconds
+    Tag.ON_FRAC,
+    Tag.CONNECTED_FRAC,
+    Tag.CPU_AND_NETWORK_AVAILABLE_FRAC,
+    Tag.ACTIVE_FRAC,
+    Tag.GPU_ACTIVE_FRAC,
+    Tag.TOTAL_DURATION,
+    Tag.TOTAL_ACTIVE_DURATION,
+    Tag.TOTAL_GPU_ACTIVE_DURATION,
+    Tag.PREVIOUS_UPTIME,
+    Tag.SESSION_ACTIVE_DURATION,
+    Tag.SESSION_GPU_ACTIVE_DURATION,
+    # Of the global preferences
+    Tag.BATTERY_CHARGE_MIN_PCT,
+    Tag.BATTERY_MAX_TEMPERATURE,
+    Tag.SUSPEND_IF_NO_RECENT_INPUT,
+    Tag.SUSPEND_CPU_USAGE,
+    Tag.START_HOUR,
+    Tag.END_HOUR,
+    Tag.NET_START_HOUR,
+    Tag.NET_END_HOUR,
+    Tag.WORK_BUF_MIN_DAYS,
+    Tag.WORK_BUF_ADDITIONAL_DAYS,
+    Tag.MAX_NCPUS_PCT,
+    Tag.NIU_MAX_NCPUS_PCT,
+    Tag.NIU_CPU_USAGE_LIMIT,
+    Tag.NIU_SUSPEND_CPU_USAGE,
+    Tag.CPU_SCHEDULING_PERIOD_MINUTES,
+    Tag.DISK_INTERVAL,
+    Tag.DISK_MAX_USED_GB,
+    Tag.DISK_MAX_USED_PCT,
+    Tag.DISK_MIN_FREE_GB,
+    Tag.VM_MAX_USED_PCT,
+    Tag.RAM_MAX_USED_BUSY_PCT,
+    Tag.RAM_MAX_USED_IDLE_PCT,
+    Tag.IDLE_TIME_TO_RUN,
+    Tag.MAX_BYTES_SEC_UP,
+    Tag.MAX_BYTES_SEC_DOWN,
+    Tag.CPU_USAGE_LIMIT,
+    Tag.DAILY_XFER_LIMIT_MB,
     # Seconds left of a backoff, sent only while there is one
     Tag.PROJECT_BACKOFF,
     Tag.DOWNLOAD_BACKOFF,
@@ -169,6 +233,16 @@ BOOL_TAG = {
     # In replies this client does not ask for yet: get_state, get_notices and the proxy settings
     Tag.EXECUTING_AS_DAEMON,
     Tag.HAVE_ATI,
+    # Of the global preferences, in get_state()
+    Tag.RUN_ON_BATTERIES,
+    Tag.RUN_IF_USER_ACTIVE,
+    Tag.RUN_GPU_IF_USER_ACTIVE,
+    Tag.LEAVE_APPS_IN_MEMORY,
+    Tag.CONFIRM_BEFORE_CONNECTING,
+    Tag.HANGUP_IF_DIALED,
+    Tag.DONT_VERIFY_IMAGES,
+    Tag.OVERRIDE_FILE_PRESENT,
+    Tag.NETWORK_WIFI_ONLY,
     Tag.IS_PRIVATE,
     Tag.NO_AUTODETECT,
     Tag.SOCKS5_REMOTE_DNS,
@@ -235,6 +309,8 @@ LIST_TAG = {
     Tag.FILE_TRANSFERS,
     # The WSL distributions of a Windows host, in get_host_info()
     Tag.WSL,
+    # The keywords of a workunit, in get_state()
+    Tag.JOB_KEYWORDS,
 }
 
 # An element that comes once for each of something, side by side with other elements, such as the
@@ -244,6 +320,10 @@ REPEATED_TAG = {
     Tag.OPENCL_CPU_PROP,
     # The GPUs a WSL distribution sees, in the wsl of get_host_info()
     Tag.WSL_GPU,
+    # The files of an app version or a workunit, and the days of the week with their own hours in
+    # the global preferences, in get_state()
+    Tag.FILE_REF,
+    Tag.DAY_PREFS,
 }
 
 TIMEDELTA_TAG = {
@@ -273,6 +353,14 @@ TIME_TAG = {
     Tag.FIRST_REQUEST_TIME,
     Tag.NEXT_REQUEST_TIME,
     Tag.PROJECT_FILES_DOWNLOADED_TIME,
+    # In get_state(): when the averages of the network were last updated, when the BOINC client
+    # started, this time and ever, the time of the reply, and when the preferences changed
+    Tag.AVG_TIME_UP,
+    Tag.AVG_TIME_DOWN,
+    Tag.CLIENT_START_TIME,
+    Tag.TOTAL_START_TIME,
+    Tag.NOW,
+    Tag.MOD_TIME,
     Tag.COMPLETED_TIME,
     # When the CPU benchmarks last ran, in get_host_info()
     Tag.P_CALCULATED,
@@ -308,6 +396,11 @@ TAG_PARSER: dict[str, Callable[[str], Any]] = {
     Tag.BODY: lambda x: x.replace("<![CDATA[", "").replace("]]>", "").strip(),
     # Of a notice, which BOINC writes between newlines
     Tag.DESCRIPTION: str.strip,
+    # Of a workunit, which BOINC writes between newlines too
+    Tag.COMMAND_LINE: str.strip,
+    # A number of GPUs: whole in coprocs of get_host_info(), and a fraction in what an app version
+    # or a workunit uses in get_state()
+    Tag.COUNT: lambda x: int(x) if x.lstrip("-").isdigit() else float(x),
     # A day of the transfer history, as the number of days since 1970-01-01 in the time zone of the
     # host BOINC runs on
     Tag.WHEN: lambda x: date(1970, 1, 1) + timedelta(days=int(x)),
@@ -461,6 +554,50 @@ def parse_result(e: ET.Element) -> dict[str, Any]:
         active_task.update(result[Tag.ACTIVE_TASK])
         result[Tag.ACTIVE_TASK] = active_task
     return result
+
+
+# The flags of what get_state() has that BOINC writes only when they are set
+APP_VERSION_FLAG_TAG = (Tag.DONT_THROTTLE, Tag.IS_WRAPPER, Tag.NEEDS_NETWORK)
+FILE_REF_FLAG_TAG = (Tag.MAIN_PROGRAM, Tag.COPY_FILE, Tag.OPTIONAL)
+STATE_FLAG_TAG = (Tag.HAVE_CUDA, Tag.HAVE_ATI)
+
+# The elements of get_state() that come once for each project, app, app version, workunit, task
+# and platform, and the list each goes in
+STATE_LIST_TAG = {
+    Tag.PROJECT: "projects",
+    Tag.APP: "apps",
+    Tag.APP_VERSION: "app_versions",
+    Tag.WORKUNIT: "workunits",
+    Tag.RESULT: "results",
+    Tag.PLATFORM: "platforms",
+}
+
+
+def parse_state(e: ET.Element) -> dict[str, Any]:
+    state: dict[str, Any] = dict.fromkeys(STATE_FLAG_TAG, False)
+    state.update((key, []) for key in STATE_LIST_TAG.values())
+    project_url = None
+    for c in e:
+        if c.tag == Tag.PROJECT:
+            project = parse_project(c)
+            # The apps, app versions and workunits after a project are its own, and do not say so
+            project_url = Project(master_url=project.master_url)
+            item: Any = project
+        elif c.tag == Tag.RESULT:
+            item = parse_result(c)
+        elif c.tag in (Tag.APP, Tag.APP_VERSION, Tag.WORKUNIT):
+            item = {Tag.PROJECT_URL: project_url} | parse_generic(c)
+            if c.tag == Tag.APP_VERSION:
+                item = with_flags(item, APP_VERSION_FLAG_TAG)
+            for i, file_ref in enumerate(item.get(Tag.FILE_REF, [])):
+                item[Tag.FILE_REF][i] = with_flags(file_ref, FILE_REF_FLAG_TAG)
+        elif c.tag in STATE_LIST_TAG:
+            item = parse_generic(c)
+        else:
+            state[c.tag] = parse_generic(c)
+            continue
+        state[STATE_LIST_TAG[c.tag]].append(item)
+    return state
 
 
 def parse_project(e: ET.Element) -> "Project":

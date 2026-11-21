@@ -11,14 +11,23 @@ import aioboinc
 from aioboinc import (
     AcctMgrInfo,
     ActiveTask,
+    App,
+    AppVersion,
     CcStatus,
+    ClientState,
+    CoprocUsage,
     DailyStatistics,
     DailyXfer,
+    DayPrefs,
     DiskUsage,
+    FileRef,
     FileTransfer,
     FileXfer,
+    GlobalPreferences,
     HostInfo,
+    JobKeyword,
     Message,
+    NetStats,
     NewerVersion,
     Notice,
     Notices,
@@ -28,7 +37,9 @@ from aioboinc import (
     ProjectDiskUsage,
     ProjectStatistics,
     Result,
+    TimeStats,
     Version,
+    Workunit,
     WslDistro,
     WslGpu,
 )
@@ -246,6 +257,34 @@ class AcctMgrInfoTypeTest(TypesTest):
     async def test_matches_the_replies(self):
         self.assertMatches(await self.client.get_acct_mgr_info(), AcctMgrInfo)
         self.assertMatches(await self.client.get_acct_mgr_info(), AcctMgrInfo)
+
+
+class ClientStateTypeTest(TypesTest):
+
+    replies = (queries.STATE,)
+
+    async def test_matches_the_reply(self):
+        state = await self.client.get_state()
+        self.assertMatches(state, ClientState)
+        self.assertMatches(state["host_info"], HostInfo)
+        self.assertMatches(state["net_stats"], NetStats)
+        self.assertMatches(state["time_stats"], TimeStats)
+        self.assertMatches(state["global_preferences"], GlobalPreferences)
+        for day in state["global_preferences"]["day_prefs"]:
+            self.assertMatches(day, DayPrefs)
+        for app in state["apps"]:
+            self.assertMatches(app, App)
+        for app_version in state["app_versions"]:
+            self.assertMatches(app_version, AppVersion)
+            self.assertMatches(app_version["coproc"], CoprocUsage)
+            for file_ref in app_version["file_ref"]:
+                self.assertMatches(file_ref, FileRef)
+        for workunit in state["workunits"]:
+            self.assertMatches(workunit, Workunit)
+            for keyword in workunit["job_keywords"]:
+                self.assertMatches(keyword, JobKeyword)
+        for result in state["results"]:
+            self.assertMatches(result, Result)
 
 
 class ExportedTypesTest(TypesTest):

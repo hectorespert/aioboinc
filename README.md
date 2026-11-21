@@ -118,6 +118,7 @@ To read the state of the BOINC client:
 | `get_old_results()` | A list of the tasks reported and deleted in the last hour, which `get_results()` no longer has |
 | `get_project_status()` | A list of the projects, as `Project` objects, importable from `aioboinc`, that compare equal to their URL |
 | `get_results(active_only=False)` | A list of the tasks; with `active_only=True`, only those started and not finished |
+| `get_state()` | The whole state in one reply, as a dict of lists: `projects`, `apps`, `app_versions`, `workunits` and `results`, each app, app version and workunit with its `project_url`, plus `host_info`, `global_preferences`, `net_stats` and `time_stats`. It is the largest reply; the other queries are cheaper for what they return |
 | `get_statistics()` | The credit of the user and of the host for each day, as a list with a dict for each project, with its `master_url` and its `daily_statistics` |
 
 The replies are dicts and lists keyed by the names of the elements BOINC sends, described in the
