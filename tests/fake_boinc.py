@@ -13,7 +13,7 @@ import unittest
 from aioboinc import init_rpc_client
 
 END_OF_MESSAGE = b"\x03"
-ENCODING = "ISO-8859-1"
+ENCODING = "UTF-8"
 SUCCESS = "<boinc_gui_rpc_reply><success/></boinc_gui_rpc_reply>"
 # A reply that never comes
 NO_REPLY = None
@@ -121,7 +121,9 @@ class FakeBoinc:
                             await writer.drain()
                             # Give the client time to read each piece on its own
                             await asyncio.sleep(0.05)
-                    writer.write(bytes(reply, encoding=ENCODING) + END_OF_MESSAGE)
+                    if isinstance(reply, str):
+                        reply = bytes(reply, encoding=ENCODING)
+                    writer.write(reply + END_OF_MESSAGE)
                     await writer.drain()
                 except ConnectionError:
                     break

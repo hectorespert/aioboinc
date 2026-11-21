@@ -22,7 +22,9 @@ DEFAULT_TIMEOUT = 30.0
 REPLY_TAG = "boinc_gui_rpc_reply"
 REQUEST_TAG = "boinc_gui_rpc_request"
 END_OF_MESSAGE = b"\x03"
-BOINC_ENCODING = "ISO-8859-1"
+# The BOINC client writes its text as UTF-8, and the BOINC Manager reads it so (wxConvUTF8 in
+# clientgui/MainDocument.cpp)
+BOINC_ENCODING = "UTF-8"
 
 
 def _is_ipv6_address(host: str) -> bool:
@@ -133,7 +135,9 @@ class _RPCClientRaw:
         # readuntil() reads the whole message, however many packets it comes in, ending with the end
         # of message character, or raises
         message = await self._read()
-        resp_e = ET.fromstring(str(message[:-1], encoding=BOINC_ENCODING))
+        # A text the BOINC client did not write, such as a message from a project, may not be UTF-8.
+        # One wrong byte becomes U+FFFD rather than make the whole reply fail.
+        resp_e = ET.fromstring(str(message[:-1], encoding=BOINC_ENCODING, errors="replace"))
         if resp_e.tag != REPLY_TAG or len(resp_e) == 0:
             raise BOINCProtocolError(f"Got an invalid reply from {self.host}")
         return resp_e[0]
