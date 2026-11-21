@@ -86,8 +86,9 @@ class RPCClient:
     asyncio.gather(), wait for their turn. A reply is parsed into dicts and lists keyed by the
     names of its XML elements, and the type of each value depends on its element: numbers become
     int or float, flags bool, times datetime in UTC or None when not set, the CPU and elapsed
-    times of a task timedelta, and empty texts "". Other durations, such as the *_mode_delay of
-    get_cc_status(), are float seconds. An element the parser does not know stays a str. For what
+    times of a task and the time so far and left of a transfer timedelta, and empty texts "".
+    Other durations, such as the *_mode_delay of get_cc_status() or the backoffs, are float
+    seconds. An element the parser does not know stays a str. For what
     each reply holds, see
     https://github.com/BOINC/boinc/wiki/GuiRpcProtocol#requests-and-replies
 

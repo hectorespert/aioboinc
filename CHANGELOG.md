@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- **Fixed** numbers and times that came as strings, because the parser did not know their
+  elements. Found by checking every number the BOINC client writes in the replies of the queries
+  here, and confirmed against a running client:
+  - `get_file_transfers()`: `nbytes`, `max_nbytes`, `bytes_xferred`, `last_bytes_xferred` and
+    `file_offset` as `float` bytes, `status` as `int`, `project_backoff` as `float` seconds, and
+    `estimated_xfer_time_remaining` as `timedelta`, like `time_so_far`.
+  - `get_project_status()`: `disk_share` and `ams_resource_share_new` as `float`, and
+    `download_backoff` and `upload_backoff` as `float` seconds.
+  - `get_results()`: `completed_time` as `datetime` in UTC, and `virtual_size` of the active task
+    as `float` bytes, like `swap_size`.
+  - `get_host_info()`: `docker_type` and `docker_compose_type` as `int`; the properties of an AMD
+    GPU, such as `localRAM`, `engineClock` or `numberOfSIMD`, and `ncores` and `metal_support` of
+    an Apple GPU, as `int`; `doublePrecision` of an AMD GPU as `bool`.
 - **Fixed** the links to the GUI RPC protocol in the README and the docstrings. They pointed at the
   old BOINC wiki, which answers 404; they point at the BOINC wiki on GitHub.
 

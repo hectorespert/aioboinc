@@ -4,7 +4,7 @@ Tests for the requests that read from the BOINC client
 The replies are the ones in fixtures/web_state.py, captured from a real client.
 """
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from aioboinc._parse import Project
 
@@ -110,6 +110,58 @@ class FileTransfersTest(RPCClientTestCase):
         self.assertEqual(self.boinc.requests, ["<get_file_transfers/>"])
 
 
+class FileTransferTest(RPCClientTestCase):
+
+    # As FILE_INFO::write_gui() and PERS_FILE_XFER::write() in the client write them, with
+    # project_backoff only while the project backs off its transfers
+    replies = (
+        """<boinc_gui_rpc_reply>
+<file_transfers>
+<file_transfer>
+    <project_url>http://www.gpugrid.net/</project_url>
+    <project_name>GPUGRID</project_name>
+    <name>result_0_r1_sent_0</name>
+    <nbytes>1048576.000000</nbytes>
+    <max_nbytes>10000000.000000</max_nbytes>
+    <status>0</status>
+    <persistent_file_xfer>
+        <num_retries>2</num_retries>
+        <first_request_time>1586729657.140112</first_request_time>
+        <next_request_time>1586729957.140112</next_request_time>
+        <time_so_far>12.500000</time_so_far>
+        <last_bytes_xferred>524288.000000</last_bytes_xferred>
+        <is_upload>1</is_upload>
+    </persistent_file_xfer>
+    <file_xfer>
+        <estimated_xfer_time_remaining>30.000000</estimated_xfer_time_remaining>
+        <bytes_xferred>524288.000000</bytes_xferred>
+        <file_offset>0.000000</file_offset>
+        <xfer_speed>41943.040000</xfer_speed>
+        <url>https://www.gpugrid.net/upload</url>
+    </file_xfer>
+    <project_backoff>120.000000</project_backoff>
+</file_transfer>
+</file_transfers>
+</boinc_gui_rpc_reply>
+""",
+    )
+
+    async def test_numbers_are_numbers(self):
+        (transfer,) = await self.client.get_file_transfers()
+        self.assertEqual(transfer["nbytes"], 1048576.0)
+        self.assertEqual(transfer["max_nbytes"], 10000000.0)
+        self.assertEqual(transfer["status"], 0)
+        self.assertEqual(transfer["project_backoff"], 120.0)
+        self.assertEqual(transfer["persistent_file_xfer"]["last_bytes_xferred"], 524288.0)
+        self.assertEqual(transfer["file_xfer"]["bytes_xferred"], 524288.0)
+        self.assertEqual(transfer["file_xfer"]["file_offset"], 0.0)
+
+    async def test_the_time_left_is_a_timedelta_like_the_time_so_far(self):
+        (transfer,) = await self.client.get_file_transfers()
+        self.assertEqual(transfer["file_xfer"]["estimated_xfer_time_remaining"], timedelta(seconds=30))
+        self.assertEqual(transfer["persistent_file_xfer"]["time_so_far"], timedelta(seconds=12.5))
+
+
 class HostInfoTest(RPCClientTestCase):
 
     replies = (web_state.host_info,)
@@ -167,14 +219,32 @@ class HostInfoWithAmdAndAppleGpusTest(RPCClientTestCase):
    <name>Radeon RX 580</name>
    <have_cal>0</have_cal>
    <have_opencl>1</have_opencl>
+   <target>0</target>
+   <localRAM>8192</localRAM>
+   <uncachedRemoteRAM>0</uncachedRemoteRAM>
+   <cachedRemoteRAM>0</cachedRemoteRAM>
+   <engineClock>2100</engineClock>
+   <memoryClock>0</memoryClock>
+   <wavefrontSize>64</wavefrontSize>
+   <numberOfSIMD>36</numberOfSIMD>
+   <doublePrecision>1</doublePrecision>
+   <pitch_alignment>0</pitch_alignment>
+   <surface_alignment>0</surface_alignment>
+   <maxResource1DWidth>0</maxResource1DWidth>
+   <maxResource2DWidth>0</maxResource2DWidth>
+   <maxResource2DHeight>0</maxResource2DHeight>
 </coproc_ati>
 <coproc_apple_gpu>
    <count>1</count>
    <model>Apple M1</model>
    <have_metal>1</have_metal>
    <have_opencl>0</have_opencl>
+   <ncores>8</ncores>
+   <metal_support>7</metal_support>
 </coproc_apple_gpu>
     </coprocs>
+    <docker_version>27.5.1</docker_version>
+    <docker_type>2</docker_type>
 </host_info>
 </boinc_gui_rpc_reply>
 """,
@@ -186,6 +256,18 @@ class HostInfoWithAmdAndAppleGpusTest(RPCClientTestCase):
         self.assertIs(amd["have_opencl"], True)
         self.assertIs(apple["have_metal"], True)
         self.assertIs(apple["have_opencl"], False)
+
+    async def test_properties_of_a_gpu_are_numbers(self):
+        amd, apple = (await self.client.get_host_info())["coprocs"]
+        self.assertEqual(
+            [amd[p] for p in ("localRAM", "engineClock", "wavefrontSize", "numberOfSIMD", "target")],
+            [8192, 2100, 64, 36, 0],
+        )
+        self.assertIs(amd["doublePrecision"], True)
+        self.assertEqual([apple["ncores"], apple["metal_support"]], [8, 7])
+
+    async def test_the_type_of_docker_is_a_number(self):
+        self.assertEqual((await self.client.get_host_info())["docker_type"], 2)
 
 
 class MessagesTest(RPCClientTestCase):
@@ -331,6 +413,33 @@ class ProjectBackoffOfCapturedReplyTest(RPCClientTestCase):
         self.assertEqual(gpugrid.no_rsc_apps, [])
 
 
+class ProjectSharesAndBackoffsTest(RPCClientTestCase):
+
+    # As PROJECT::write_state() writes them for the GUI: ams_resource_share_new only when an account
+    # manager sets the share, and the backoffs, in seconds left, only while there is one
+    replies = (
+        """<boinc_gui_rpc_reply>
+<projects>
+<project>
+    <master_url>http://www.gpugrid.net/</master_url>
+    <disk_share>24234069469.866669</disk_share>
+    <ams_resource_share_new>50.000000</ams_resource_share_new>
+    <download_backoff>60.000000</download_backoff>
+    <upload_backoff>90.500000</upload_backoff>
+</project>
+</projects>
+</boinc_gui_rpc_reply>
+""",
+    )
+
+    async def test_numbers_are_numbers(self):
+        (project,) = await self.client.get_project_status()
+        self.assertEqual(project.disk_share, 24234069469.866669)
+        self.assertEqual(project.ams_resource_share_new, 50.0)
+        self.assertEqual(project.download_backoff, 60.0)
+        self.assertEqual(project.upload_backoff, 90.5)
+
+
 class ResultsTest(RPCClientTestCase):
 
     replies = (web_state.results,)
@@ -354,6 +463,36 @@ class ResultsTest(RPCClientTestCase):
         await self.client.get_results(active_only=True)
         self.assertEqual(self.boinc.requests, ["<get_results><active_only/></get_results>"])
 
+
+
+class CompletedResultTest(RPCClientTestCase):
+
+    # As RESULT::write_gui() and ACTIVE_TASK::write_gui() write them: completed_time only once the
+    # task is done
+    replies = (
+        """<boinc_gui_rpc_reply>
+<results>
+<result>
+    <name>task_1</name>
+    <completed_time>1795246648.368982</completed_time>
+    <active_task>
+        <swap_size>1048576</swap_size>
+        <virtual_size>2097152</virtual_size>
+    </active_task>
+</result>
+</results>
+</boinc_gui_rpc_reply>
+""",
+    )
+
+    async def test_the_time_it_completed_is_a_time(self):
+        (task,) = await self.client.get_results()
+        self.assertEqual(task["completed_time"], datetime.fromtimestamp(1795246648.368982, UTC))
+
+    async def test_the_virtual_size_is_a_number_like_the_swap_size(self):
+        (task,) = await self.client.get_results()
+        self.assertEqual(task["active_task"]["virtual_size"], 2097152.0)
+        self.assertEqual(task["active_task"]["swap_size"], 1048576.0)
 
 class NoResultsTest(RPCClientTestCase):
 

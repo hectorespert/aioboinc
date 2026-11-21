@@ -72,6 +72,27 @@ INTEGER_TAG = {
     Tag.CLOCKRATE,
     Tag.DEVICEOVERLAP,
     Tag.MULTIPROCESSORCOUNT,
+    # The properties of an AMD GPU, in coprocs
+    Tag.CACHEDREMOTERAM,
+    Tag.ENGINECLOCK,
+    Tag.LOCALRAM,
+    Tag.MAXRESOURCE1DWIDTH,
+    Tag.MAXRESOURCE2DHEIGHT,
+    Tag.MAXRESOURCE2DWIDTH,
+    Tag.MEMORYCLOCK,
+    Tag.NUMBEROFSIMD,
+    Tag.PITCH_ALIGNMENT,
+    Tag.SURFACE_ALIGNMENT,
+    Tag.TARGET,
+    Tag.UNCACHEDREMOTERAM,
+    Tag.WAVEFRONTSIZE,
+    # And of an Apple GPU
+    Tag.NCORES,
+    Tag.METAL_SUPPORT,
+    Tag.DOCKER_TYPE,
+    Tag.DOCKER_COMPOSE_TYPE,
+    # The state of a file transfer, as a number
+    Tag.STATUS,
 }
 
 FLOAT_TAG = {
@@ -115,6 +136,19 @@ FLOAT_TAG = {
     Tag.MEMPITCH,
     Tag.TOTALCONSTMEM,
     Tag.TEXTUREALIGNMENT,
+    Tag.DISK_SHARE,
+    Tag.AMS_RESOURCE_SHARE_NEW,
+    Tag.VIRTUAL_SIZE,
+    # Bytes of a file transfer
+    Tag.NBYTES,
+    Tag.MAX_NBYTES,
+    Tag.BYTES_XFERRED,
+    Tag.LAST_BYTES_XFERRED,
+    Tag.FILE_OFFSET,
+    # Seconds left of a backoff, sent only while there is one
+    Tag.PROJECT_BACKOFF,
+    Tag.DOWNLOAD_BACKOFF,
+    Tag.UPLOAD_BACKOFF,
 }
 
 BOOL_TAG = {
@@ -129,9 +163,10 @@ BOOL_TAG = {
     Tag.WSL_AVAILABLE,
     Tag.AMS_PASSWORD_ERROR,
     Tag.MANAGER_MUST_QUIT,
-    # Of an AMD and an Apple GPU, in coprocs
+    # Of an AMD and an Apple GPU, in coprocs. doublePrecision is 0 or 1 too, a CALboolean.
     Tag.HAVE_CAL,
     Tag.HAVE_METAL,
+    Tag.DOUBLEPRECISION,
     # In replies this client does not ask for yet: get_state, get_notices and the proxy settings
     Tag.EXECUTING_AS_DAEMON,
     Tag.HAVE_ATI,
@@ -210,6 +245,7 @@ TIMEDELTA_TAG = {
     Tag.CHECKPOINT_CPU_TIME,
     Tag.CURRENT_CPU_TIME,
     Tag.TIME_SO_FAR,
+    Tag.ESTIMATED_XFER_TIME_REMAINING,
 }
 
 TIME_TAG = {
@@ -226,6 +262,7 @@ TIME_TAG = {
     Tag.FIRST_REQUEST_TIME,
     Tag.NEXT_REQUEST_TIME,
     Tag.PROJECT_FILES_DOWNLOADED_TIME,
+    Tag.COMPLETED_TIME,
 }
 
 TAG_PARSER: dict[str, Callable[[str], Any]] = {
