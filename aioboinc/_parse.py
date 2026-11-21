@@ -258,6 +258,23 @@ def BOOL_TAG_PARSER(x: str) -> bool:
     return int(x) != 0
 
 
+# A project has one of each per resource, such as CPU or NVIDIA, with its name and value. They are
+# a dict of the value by the name of the resource: the time until which the project is backed off,
+# or None, and the seconds it backs off for.
+BY_RESOURCE_TAG: dict[str, Callable[[str], Any]] = {
+    Tag.RSC_BACKOFF_TIME: TIME_TAG_PARSER,
+    Tag.RSC_BACKOFF_INTERVAL: FLOAT_TAG_PARSER,
+}
+
+# A project has one of each per resource it applies to, with the name of the resource, and none
+# when it applies to none. They are a list of the names.
+RESOURCE_NAMES_TAG = {
+    Tag.NO_RSC_AMS,
+    Tag.NO_RSC_APPS,
+    Tag.NO_RSC_CONFIG,
+    Tag.NO_RSC_PREF,
+}
+
 _PARSERS: list[tuple[Callable[[str], Any], set[str]]] = [
     (INTEGER_TAG_PARSER, INTEGER_TAG),
     (FLOAT_TAG_PARSER, FLOAT_TAG),
@@ -276,7 +293,16 @@ def parse_generic(e: ET.Element):
         return [parse_generic(cc) for cc in e]
     elif len(e) > 0:
         # recurse on elements with children
-        return dict((c.tag, parse_generic(c)) for c in e)
+        res: dict[str, Any] = {}
+        for c in e:
+            if c.tag in BY_RESOURCE_TAG:
+                value = BY_RESOURCE_TAG[c.tag](c.findtext(Tag.VALUE, "0"))
+                res.setdefault(c.tag, {})[c.findtext(Tag.NAME, "")] = value
+            elif c.tag in RESOURCE_NAMES_TAG:
+                res.setdefault(c.tag, []).append(c.text or "")
+            else:
+                res[c.tag] = parse_generic(c)
+        return res
     elif e.text is not None:
         # set parsed value if available
         return TAG_PARSER.get(e.tag, str)(e.text)
@@ -284,6 +310,13 @@ def parse_generic(e: ET.Element):
         # ElementTree reads <tag/> and <tag></tag> the same, so whether an empty element is a flag
         # that is set or a text that is empty depends on the tag.
         return True if e.tag in BOOL_TAG else ""
+
+
+def parse_project(e: ET.Element) -> "Project":
+    # The lists of resources are there, empty, when BOINC sends none
+    fields: dict[str, Any] = {tag: [] for tag in RESOURCE_NAMES_TAG}
+    fields.update(parse_generic(e))
+    return Project(**fields)
 
 
 class Project:

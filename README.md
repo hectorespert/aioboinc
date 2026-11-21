@@ -120,7 +120,9 @@ The replies are dicts and lists keyed by the names of the elements BOINC sends, 
 as `int` or `float`, flags as `bool`, times as `datetime` in UTC, or `None` when they are not set,
 and the CPU and elapsed times of a task as `timedelta`. Other durations, such as the
 `*_mode_delay` of `get_cc_status()`, are `float` seconds. The type depends on the element, and an
-element the parser does not know comes as a `str`.
+element the parser does not know comes as a `str`. What a project sends once for each resource,
+such as CPU or NVIDIA, is a dict by the name of the resource, as `rsc_backoff_time`, or a list of
+the names, as `no_rsc_apps`.
 
 To control it, after `authorize()`. Each returns `True` when BOINC answers with success:
 
