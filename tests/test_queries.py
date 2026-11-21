@@ -6,7 +6,7 @@ The replies are the ones in fixtures/web_state.py, captured from a real client.
 
 from datetime import UTC, datetime, timedelta
 
-from aioboinc._parse import Project
+from aioboinc import Project
 
 from .fake_boinc import RPCClientTestCase
 from .fixtures import web_state

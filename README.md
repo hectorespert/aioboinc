@@ -18,8 +18,7 @@ The package is imported as `aioboinc`, not `pyboinc`, so moving over starts with
 imports:
 
 ```python
-from aioboinc import init_rpc_client
-from aioboinc.rpc_client import Mode
+from aioboinc import Mode, init_rpc_client
 ```
 
 Since 0.4.0 errors are raised rather than returned. `authorize()` raises `BOINCAuthError` for a
@@ -37,8 +36,7 @@ pip install aioboinc
 ```python
 import asyncio
 
-from aioboinc import BOINCAuthError, init_rpc_client
-from aioboinc.rpc_client import Mode
+from aioboinc import BOINCAuthError, Mode, init_rpc_client
 
 IP_BOINC = "127.0.0.1"
 PASSWORD_BOINC = "example_password"
@@ -112,7 +110,7 @@ To read the state of the BOINC client:
 | `get_host_info()` | The description of the host: CPU, memory, disk, operating system, GPUs |
 | `get_message_count()` | The sequence number of the newest message of the event log |
 | `get_messages(seqno=0, translatable=False)` | A list of the messages newer than `seqno` |
-| `get_project_status()` | A list of the projects, as `Project` objects that compare equal to their URL |
+| `get_project_status()` | A list of the projects, as `Project` objects, importable from `aioboinc`, that compare equal to their URL |
 | `get_results(active_only=False)` | A list of the tasks; with `active_only=True`, only those started and not finished |
 
 The replies are dicts and lists keyed by the names of the elements BOINC sends, described in the

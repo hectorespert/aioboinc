@@ -2,7 +2,7 @@
 Tests for the requests that change something on the BOINC client
 """
 
-from aioboinc._parse import Project
+from aioboinc import Project
 
 from .fake_boinc import RPCClientTestCase
 

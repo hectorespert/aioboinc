@@ -1,7 +1,6 @@
 import asyncio
 
-from aioboinc import BOINCAuthError, init_rpc_client
-from aioboinc.rpc_client import Mode
+from aioboinc import BOINCAuthError, Mode, init_rpc_client
 
 IP_BOINC = "127.0.0.1"
 PASSWORD_BOINC = "example_password"
