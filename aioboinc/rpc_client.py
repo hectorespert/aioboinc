@@ -583,6 +583,48 @@ class RPCClient:
         """
         return await self._project_op(Tag.PROJECT_DONT_DETACH_WHEN_DONE, project)
 
+    async def retry_file_transfer(self, project_url: Project | str, name: str):
+        """
+        Retry an upload or a download now, as Retry Now in the BOINC Manager, ending the backoff of
+        the file and of the transfers of its project
+
+        Args:
+            project_url: The transfer's project, as a Project or its master URL, such as the
+                project_url of a transfer from get_file_transfers().
+            name: The name of the file, such as the name of a transfer from get_file_transfers().
+
+        Returns:
+            True, or the reply when BOINC answers something other than success, as for
+            evaluate_reply(). A project, a file or a transfer BOINC does not have raises
+            BOINCCommandError.
+        """
+        return await self._file_transfer_op(Tag.RETRY_FILE_TRANSFER, project_url, name)
+
+    async def abort_file_transfer(self, project_url: Project | str, name: str):
+        """
+        Abort an upload or a download, as Abort Transfer in the BOINC Manager. The tasks that need
+        the file fail, and the work done on them is lost. It cannot be undone.
+
+        Args:
+            project_url: The transfer's project, as a Project or its master URL, such as the
+                project_url of a transfer from get_file_transfers().
+            name: The name of the file, such as the name of a transfer from get_file_transfers().
+
+        Returns:
+            True, or the reply when BOINC answers something other than success, as for
+            evaluate_reply(). A project, a file or a transfer BOINC does not have raises
+            BOINCCommandError.
+        """
+        return await self._file_transfer_op(Tag.ABORT_FILE_TRANSFER, project_url, name)
+
+    async def _file_transfer_op(self, tag: str, project_url: Project | str, name: str):
+        req = ET.Element(tag)
+        url = ET.SubElement(req, Tag.PROJECT_URL)
+        url.text = str(project_url)
+        filename = ET.SubElement(req, Tag.FILENAME)
+        filename.text = name
+        return await self._request_auth(req)
+
     async def _project_op(self, tag: str, project: Project | str):
         req = ET.Element(tag)
         url = ET.SubElement(req, Tag.PROJECT_URL)

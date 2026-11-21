@@ -8,6 +8,8 @@
 - **Added** `reset_project()`, `detach_project()`, `detach_project_when_done()` and
   `dont_detach_project_when_done()`, which take a project the same way. Resetting and detaching
   lose the work done on its tasks; detaching when done keeps it.
+- **Added** `retry_file_transfer()` and `abort_file_transfer()`, which take the `project_url` and
+  `name` of a transfer from `get_file_transfers()`. Aborting fails the tasks that need the file.
 
 ## 0.9.0
 
