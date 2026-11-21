@@ -1,8 +1,8 @@
 """
 Raw client for maintaining the socket connection to the BOINC server
 Based on:
-https://boinc.berkeley.edu/trac/wiki/GuiRpc
-https://boinc.berkeley.edu/trac/wiki/GuiRpcProtocol
+https://github.com/BOINC/boinc/wiki/GuiRpc
+https://github.com/BOINC/boinc/wiki/GuiRpcProtocol
 https://github.com/BOINC/boinc/blob/master/lib/gui_rpc_client.cpp
 
 Note that this client is Async, based on asyncio

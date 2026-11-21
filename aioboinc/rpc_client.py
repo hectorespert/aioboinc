@@ -3,7 +3,7 @@ Client for the GUI RPC protocol of a BOINC client
 
 init_rpc_client() connects one. Its methods make the requests, authorize() among them, and wait
 for their replies. For what a reply holds, see
-https://boinc.berkeley.edu/trac/wiki/GuiRpcProtocol#RequestsandReplies
+https://github.com/BOINC/boinc/wiki/GuiRpcProtocol#requests-and-replies
 """
 
 import asyncio
@@ -89,7 +89,7 @@ class RPCClient:
     times of a task timedelta, and empty texts "". Other durations, such as the *_mode_delay of
     get_cc_status(), are float seconds. An element the parser does not know stays a str. For what
     each reply holds, see
-    https://boinc.berkeley.edu/trac/wiki/GuiRpcProtocol#RequestsandReplies
+    https://github.com/BOINC/boinc/wiki/GuiRpcProtocol#requests-and-replies
 
     The queries need authorize() first only when the client is on another host. The requests
     that change something always do.

@@ -5,7 +5,7 @@
 [![PyPI](https://img.shields.io/pypi/v/aioboinc)](https://pypi.org/project/aioboinc/)
 
 A small package to talk to a [BOINC](https://boinc.berkeley.edu/) client from Python using asyncio,
-based on the [BOINC GUI RPC Protocol](https://boinc.berkeley.edu/trac/wiki/GuiRpcProtocol).
+based on the [BOINC GUI RPC Protocol](https://github.com/BOINC/boinc/wiki/GuiRpcProtocol).
 It is meant for monitoring and controlling a BOINC client and does not cover the whole protocol.
 It has no dependencies outside the standard library.
 
@@ -116,7 +116,7 @@ To read the state of the BOINC client:
 | `get_results(active_only=False)` | A list of the tasks; with `active_only=True`, only those started and not finished |
 
 The replies are dicts and lists keyed by the names of the elements BOINC sends, described in the
-[protocol](https://boinc.berkeley.edu/trac/wiki/GuiRpcProtocol#RequestsandReplies). Numbers come
+[protocol](https://github.com/BOINC/boinc/wiki/GuiRpcProtocol#requests-and-replies). Numbers come
 as `int` or `float`, flags as `bool`, times as `datetime` in UTC, or `None` when they are not set,
 and the CPU and elapsed times of a task as `timedelta`. Other durations, such as the
 `*_mode_delay` of `get_cc_status()`, are `float` seconds. The type depends on the element, and an
