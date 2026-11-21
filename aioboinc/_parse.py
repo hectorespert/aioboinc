@@ -238,6 +238,8 @@ LIST_TAG = {
 TIMEDELTA_TAG = {
     Tag.ELAPSED_TIME,
     Tag.FINAL_CPU_TIME,
+    # Of a task in get_old_results()
+    Tag.CPU_TIME,
     Tag.FINAL_ELAPSED_TIME,
     Tag.ESTIMATED_CPU_TIME_REMAINING,
     Tag.CHECKPOINT_CPU_TIME,

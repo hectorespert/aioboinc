@@ -446,6 +446,22 @@ class RPCClient:
             "notices": [n for n in notices if n.get(Tag.SEQNO) != -1],
         }
 
+    async def get_old_results(self):
+        """
+        Get the tasks BOINC has reported and deleted in the last hour or so, which get_results() no
+        longer has
+
+        Returns:
+            A list with a dict for each task, oldest first, with project_url, a Project,
+            result_name, app_name and exit_status, elapsed_time and cpu_time, as timedelta, and
+            completed_time and create_time, as datetime in UTC. create_time is when BOINC deleted
+            it, after the project acknowledged its report. BOINC drops a task an hour after that,
+            when it deletes another.
+        """
+        req = ET.Element(Tag.GET_OLD_RESULTS)
+        # The tasks come as repeated <old_result> elements, which a dict keeps only the last of
+        return [parse_generic(c) for c in await self._request(req, Tag.OLD_RESULTS)]
+
     async def get_project_status(self):
         """
         Get the projects the BOINC client is attached to
