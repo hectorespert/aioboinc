@@ -130,7 +130,8 @@ class _RPCClientRaw:
 
     async def receive(self) -> ET.Element:
         """
-        Receive the next message by the RPC server
+        Receive the next message by the RPC server, as its boinc_gui_rpc_reply element, which has
+        at least one element in it. The reply is the first; get_newer_version has two.
         """
         # readuntil() reads the whole message, however many packets it comes in, ending with the end
         # of message character, or raises
@@ -140,11 +141,11 @@ class _RPCClientRaw:
         resp_e = ET.fromstring(str(message[:-1], encoding=BOINC_ENCODING, errors="replace"))
         if resp_e.tag != REPLY_TAG or len(resp_e) == 0:
             raise BOINCProtocolError(f"Got an invalid reply from {self.host}")
-        return resp_e[0]
+        return resp_e
 
     async def request(self, request: ET.Element):
         """
-        Send request to server and return reply
+        Send request to server and return reply, as receive() does
         Raises BOINCTimeoutError if the reply takes longer than the timeout, and
         BOINCConnectionError if the connection is lost, or its subclass BOINCProtocolError if the
         reply is not one. If the exchange does not finish, for those or any other reason, the

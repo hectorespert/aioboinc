@@ -111,6 +111,7 @@ To read the state of the BOINC client:
 | `get_host_info()` | The description of the host: CPU, memory, disk, operating system, GPUs |
 | `get_message_count()` | The sequence number of the newest message of the event log |
 | `get_messages(seqno=0, translatable=False)` | A list of the messages newer than `seqno` |
+| `get_newer_version()` | The newest version of the BOINC client, under `newer_version`, `""` when the one running is the newest, and the page to download it from, under `download_url`. BOINC asks the BOINC website first, so it may take seconds |
 | `get_notices(seqno=0)` | The notices newer than `seqno`, as a dict with `notices`, a list, and `refresh`, `True` when the list is complete and replaces the notices got before. It needs `authorize()` even locally |
 | `get_notices_public(seqno=0)` | The same, without the private notices, and without `authorize()` |
 | `get_old_results()` | A list of the tasks reported and deleted in the last hour, which `get_results()` no longer has |

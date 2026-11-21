@@ -19,6 +19,8 @@
   with the day as a `date`.
 - **Added** `get_old_results()`, which returns the tasks reported and deleted in the last hour,
   which `get_results()` no longer has.
+- **Added** `get_newer_version()`, which returns the newest version of the BOINC client, if newer
+  than the one running, and the page to download it from.
 - **Fixed** text that is not ASCII, such as accented letters, coming garbled, as `BiologÃ­a` for
   `Biología`. The BOINC client writes UTF-8, which was read as ISO-8859-1. Replies are now read as
   UTF-8, with a byte that is not UTF-8 becoming `\ufffd` instead of failing the reply, and requests

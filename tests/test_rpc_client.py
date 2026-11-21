@@ -354,6 +354,7 @@ class WrongReplyTest(RPCClientTestCase):
         "get_host_info": "host_info",
         "get_message_count": "seqno",
         "get_messages": "msgs",
+        "get_newer_version": "newer_version",
         "get_notices": "notices",
         "get_notices_public": "notices",
         "get_old_results": "old_results",
