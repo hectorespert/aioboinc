@@ -16,6 +16,7 @@ from typing import Any, NotRequired, TypedDict
 from ._constants import (
     ActiveTaskState,
     DockerType,
+    MessagePriority,
     Mode,
     NetworkStatus,
     ResultState,
@@ -251,3 +252,45 @@ class Result(TypedDict):
     active_task: NotRequired[ActiveTask]
     # What it uses, such as "1 CPU + 1 NVIDIA GPU", unless it is one CPU
     resources: NotRequired[str]
+
+
+class Message(TypedDict):
+    """
+    A message of the event log, from get_messages()
+    """
+
+    # The name of the project, "" for a message of the client itself
+    project: str
+    pri: MessagePriority | int
+    seqno: int
+    body: str
+    time: datetime | None
+
+
+class Notice(TypedDict):
+    """
+    A notice, in get_notices()
+    """
+
+    seqno: int
+    title: str
+    # HTML
+    description: str
+    create_time: datetime | None
+    arrival_time: datetime | None
+    is_private: bool
+    # "" for a notice of the client itself
+    project_name: str
+    # client or scheduler for theirs, "" for news from a project's feed
+    category: str
+    link: str
+
+
+class Notices(TypedDict):
+    """
+    The notices newer than a sequence number, from get_notices() and get_notices_public()
+    """
+
+    # True when BOINC has removed notices, and notices holds all of them, to replace those got before
+    refresh: bool
+    notices: list[Notice]

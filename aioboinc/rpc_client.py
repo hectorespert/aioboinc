@@ -15,7 +15,7 @@ from ._constants import Mode
 from ._parse import Project, parse_generic, parse_project, parse_result
 from ._raw_client import DEFAULT_TIMEOUT, GUI_RPC_DEFAULT_PORT, _RPCClientRaw
 from ._tag import Tag
-from ._types import CcStatus, DiskUsage, HostInfo, Result, Version
+from ._types import CcStatus, DiskUsage, HostInfo, Message, Notices, Result, Version
 from .exceptions import BOINCAuthError, BOINCClientError, BOINCCommandError, BOINCProtocolError
 
 __all__ = ["BOINCClientError", "Mode", "RPCClient", "init_rpc_client"]
@@ -370,7 +370,7 @@ class RPCClient:
         req = ET.Element(Tag.GET_HOST_INFO)
         return parse_generic(await self._request(req, Tag.HOST_INFO))
 
-    async def get_message_count(self):
+    async def get_message_count(self) -> int:
         """
         Get the sequence number of the newest message of the event log
 
@@ -380,7 +380,7 @@ class RPCClient:
         req = ET.Element(Tag.GET_MESSAGE_COUNT)
         return parse_generic(await self._request(req, Tag.SEQNO))
 
-    async def get_messages(self, seqno=0, translatable=False):
+    async def get_messages(self, seqno=0, translatable=False) -> list[Message]:
         """
         Get the messages of the event log newer than a sequence number
 
@@ -448,7 +448,7 @@ class RPCClient:
         reply = await self._request_reply(req, Tag.NEWER_VERSION)
         return {c.tag: parse_generic(c) for c in reply}
 
-    async def get_notices(self, seqno=0):
+    async def get_notices(self, seqno=0) -> Notices:
         """
         Get the notices newer than a sequence number, as the Notices tab of the BOINC Manager
         shows them: from the projects' news feeds, their schedulers and the client itself
@@ -471,7 +471,7 @@ class RPCClient:
         """
         return await self._get_notices(Tag.GET_NOTICES, seqno)
 
-    async def get_notices_public(self, seqno=0):
+    async def get_notices_public(self, seqno=0) -> Notices:
         """
         Get the notices that are not private, which needs no authorize()
 
@@ -483,7 +483,7 @@ class RPCClient:
         """
         return await self._get_notices(Tag.GET_NOTICES_PUBLIC, seqno)
 
-    async def _get_notices(self, tag: str, seqno):
+    async def _get_notices(self, tag: str, seqno) -> Notices:
         req = ET.Element(tag)
         s = ET.SubElement(req, Tag.SEQNO)
         s.text = str(seqno)
