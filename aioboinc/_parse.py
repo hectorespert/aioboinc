@@ -231,7 +231,6 @@ LIST_TAG = {
     Tag.PROJECTS,
     Tag.GUI_URLS,
     Tag.FILE_TRANSFERS,
-    Tag.COPROCS,
 }
 
 TIMEDELTA_TAG = {
@@ -357,6 +356,15 @@ RESOURCE_NAMES_TAG = {
     Tag.NO_RSC_PREF,
 }
 
+# The name of the resource of each kind of GPU, as BOINC names the resources elsewhere, such as in
+# rsc_backoff_time (proc_type_name_xml() in lib/coproc.cpp)
+GPU_RESOURCE = {
+    Tag.COPROC_CUDA: "NVIDIA",
+    Tag.COPROC_ATI: "ATI",
+    Tag.COPROC_INTEL_GPU: "intel_gpu",
+    Tag.COPROC_APPLE_GPU: "apple_gpu",
+}
+
 _PARSERS: list[tuple[Callable[[str], Any], set[str]]] = [
     (INTEGER_TAG_PARSER, INTEGER_TAG),
     (FLOAT_TAG_PARSER, FLOAT_TAG),
@@ -369,7 +377,16 @@ for parser_func, tags in _PARSERS:
 TAG_PARSER.update((tag, ENUM_TAG_PARSER(enum)) for tag, enum in ENUM_TAG.items())
 
 
+def parse_coprocs(e: ET.Element) -> dict[str, Any]:
+    # BOINC writes one element for each kind of GPU, with how many there are in count, so a dict by
+    # the name of the resource keeps them all, and says which kind each is. Any other coprocessor is
+    # a <coproc> with the name of its resource in <type>.
+    return {GPU_RESOURCE.get(c.tag) or c.findtext(Tag.TYPE) or c.tag: parse_generic(c) for c in e}
+
+
 def parse_generic(e: ET.Element):
+    if e.tag == Tag.COPROCS:
+        return parse_coprocs(e)
     if e.tag in LIST_TAG:
         # Checked first, so that an empty list is [], whether it comes as <results/> or with the
         # newline between its tags.
