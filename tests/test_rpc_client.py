@@ -206,6 +206,38 @@ class QueryTest(RPCClientTestCase):
         self.assertEqual(status["task_mode_delay"], 0.0)
 
 
+def notice_titled(title):
+    return f"<notices><notice><title>{title}</title><seqno>1</seqno></notice></notices>"
+
+
+class EncodingTest(RPCClientTestCase):
+
+    # The BOINC client writes UTF-8, as in the names of the areas in get_all_projects_list
+    replies = (
+        "<boinc_gui_rpc_reply>" + notice_titled("Biología y medicina") + "</boinc_gui_rpc_reply>",
+        b"<boinc_gui_rpc_reply>" + bytes(notice_titled("Biolog\xeda"), "ISO-8859-1") + b"</boinc_gui_rpc_reply>",
+    )
+
+    async def test_a_reply_is_read_as_utf_8(self):
+        reply = await self.client.get_notices_public()
+        self.assertEqual(reply["notices"][0]["title"], "Biología y medicina")
+
+    async def test_a_byte_that_is_not_utf_8_does_not_fail_the_reply(self):
+        await self.client.get_notices_public()
+        reply = await self.client.get_notices_public()
+        self.assertEqual(reply["notices"][0]["title"], "Biolog\ufffda")
+
+    async def test_a_request_is_written_as_utf_8(self):
+        await self.client.suspend_result("https://example.org/", "tarea_ñ")
+        self.assertEqual(
+            self.boinc.requests,
+            [
+                "<suspend_result><project_url>https://example.org/</project_url>"
+                "<name>tarea_ñ</name></suspend_result>"
+            ],
+        )
+
+
 class ConcurrentRequestsTest(RPCClientTestCase):
 
     replies = (web_state.seqno, web_state.cc_status)
