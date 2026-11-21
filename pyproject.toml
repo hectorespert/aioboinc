@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "aioboinc"
-version = "0.7.0"
+version = "0.8.0"
 description = "Asyncio client for the BOINC GUI RPC protocol: monitor and control BOINC clients"
 readme = "README.md"
 license = "MIT"

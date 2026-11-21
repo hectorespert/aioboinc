@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.8.0
 
 - **Fixed** numbers and times that came as strings, because the parser did not know their
   elements. Found by checking every number the BOINC client writes in the replies of the queries
