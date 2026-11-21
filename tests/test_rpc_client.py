@@ -347,6 +347,7 @@ class WrongReplyTest(RPCClientTestCase):
     # changes something, not to a query
     QUERIES = {
         "exchange_versions": "server_version",
+        "get_acct_mgr_info": "acct_mgr_info",
         "get_cc_status": "cc_status",
         "get_daily_xfer_history": "daily_xfers",
         "get_disk_usage": "disk_usage_summary",

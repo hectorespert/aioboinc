@@ -104,6 +104,7 @@ To read the state of the BOINC client:
 | Method | Returns |
 | --- | --- |
 | `exchange_versions()` | The version of the BOINC client, as a dict with `major`, `minor` and `release` |
+| `get_acct_mgr_info()` | The account manager, such as BAM! or Science United, under `acct_mgr_url` and `acct_mgr_name`, `""` without one. It needs `authorize()` even locally |
 | `get_cc_status()` | Its modes, why it is suspended, and the state of its network, as a dict |
 | `get_daily_xfer_history()` | The bytes uploaded and downloaded each day, newest first, as a list of dicts with `when`, a `date`, `up` and `down` |
 | `get_disk_usage()` | The disk space each project uses, under `project`, and the totals of the disk, in bytes |

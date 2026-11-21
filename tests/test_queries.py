@@ -36,6 +36,53 @@ class ExchangeVersionsTest(RPCClientTestCase):
         self.assertEqual(self.boinc.requests, ["<exchange_versions/>"])
 
 
+class AcctMgrInfoTest(RPCClientTestCase):
+
+    # As handle_acct_mgr_info() in client/gui_rpc_server_ops.cpp writes it, with an account manager
+    # that needs a cookie
+    replies = (
+        """<boinc_gui_rpc_reply>
+<acct_mgr_info>
+   <acct_mgr_url>https://bam.boincstats.com/</acct_mgr_url>
+   <acct_mgr_name>BAM!</acct_mgr_name>
+   <have_credentials/>
+   <cookie_required/>
+   <cookie_failure_url>https://bam.boincstats.com/login</cookie_failure_url>
+</acct_mgr_info>
+</boinc_gui_rpc_reply>""",
+    )
+
+    async def test_returns_the_account_manager(self):
+        self.assertEqual(
+            await self.client.get_acct_mgr_info(),
+            {
+                "acct_mgr_url": "https://bam.boincstats.com/",
+                "acct_mgr_name": "BAM!",
+                "have_credentials": True,
+                "cookie_required": True,
+                "cookie_failure_url": "https://bam.boincstats.com/login",
+            },
+        )
+        self.assertEqual(self.boinc.requests, ["<acct_mgr_info/>"])
+
+
+class NoAcctMgrTest(RPCClientTestCase):
+
+    replies = (
+        """<boinc_gui_rpc_reply>
+<acct_mgr_info>
+   <acct_mgr_url></acct_mgr_url>
+   <acct_mgr_name></acct_mgr_name>
+</acct_mgr_info>
+</boinc_gui_rpc_reply>""",
+    )
+
+    async def test_the_url_and_name_are_empty(self):
+        self.assertEqual(
+            await self.client.get_acct_mgr_info(), {"acct_mgr_url": "", "acct_mgr_name": ""}
+        )
+
+
 class CcStatusTest(RPCClientTestCase):
 
     replies = (web_state.cc_status,)

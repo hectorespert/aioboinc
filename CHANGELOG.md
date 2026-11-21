@@ -21,6 +21,8 @@
   which `get_results()` no longer has.
 - **Added** `get_newer_version()`, which returns the newest version of the BOINC client, if newer
   than the one running, and the page to download it from.
+- **Added** `get_acct_mgr_info()`, which returns the account manager the BOINC client uses, if
+  any.
 - **Fixed** text that is not ASCII, such as accented letters, coming garbled, as `BiologÃ­a` for
   `Biología`. The BOINC client writes UTF-8, which was read as ISO-8859-1. Replies are now read as
   UTF-8, with a byte that is not UTF-8 becoming `\ufffd` instead of failing the reply, and requests
