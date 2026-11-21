@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Added** `get_state()`, the whole state of the BOINC client in one reply: the host, the projects
+  and their apps, app versions, workunits and tasks, as a list of each kind, the network and time
+  statistics, and the global preferences in use. It returns a `ClientState`, with `App`,
+  `AppVersion`, `Workunit`, `FileRef`, `CoprocUsage`, `JobKeyword`, `NetStats`, `TimeStats`,
+  `GlobalPreferences` and `DayPrefs`, all importable from `aioboinc`.
 - **Added** the types of the replies of `exchange_versions()`, `get_cc_status()` and
   `get_disk_usage()`: `Version`, `CcStatus`, `DiskUsage` and `ProjectDiskUsage`, importable from
   `aioboinc`. They are `TypedDict`, so the replies are still the same dicts, and an editor or mypy

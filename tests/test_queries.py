@@ -555,6 +555,255 @@ class MessagesTest(RPCClientTestCase):
         )
 
 
+def inner(reply, tag):
+    # The element of a captured reply, as text, to build another reply with
+    start = reply.index(f"<{tag}>")
+    end = reply.rindex(f"</{tag}>") + len(f"</{tag}>")
+    return reply[start:end]
+
+
+# As CLIENT_STATE::write_state_gui() in client/cs_statefile.cpp writes it: the host, the network
+# and time statistics, then each project followed by its apps, app versions, workunits and tasks,
+# and last the client, its platforms and the global preferences
+STATE = (
+    "<boinc_gui_rpc_reply>\n<client_state>\n"
+    + inner(web_state.host_info, "host_info")
+    + """
+<have_cuda/>
+<net_stats>
+    <bwup>584580387.616399</bwup>
+    <avg_up>1057412043.172964</avg_up>
+    <avg_time_up>1795027437.639985</avg_time_up>
+    <bwdown>6103516.654512</bwdown>
+    <avg_down>1968170055.966415</avg_down>
+    <avg_time_down>1795027298.713402</avg_time_down>
+</net_stats>
+<time_stats>
+    <on_frac>0.999</on_frac>
+    <connected_frac>-1.000000</connected_frac>
+    <cpu_and_network_available_frac>0.998</cpu_and_network_available_frac>
+    <active_frac>0.997</active_frac>
+    <gpu_active_frac>0.996</gpu_active_frac>
+    <client_start_time>1795000000.000000</client_start_time>
+    <total_start_time>1600000000.000000</total_start_time>
+    <total_duration>195000000.000000</total_duration>
+    <total_active_duration>194000000.000000</total_active_duration>
+    <total_gpu_active_duration>193000000.000000</total_gpu_active_duration>
+    <now>1795027500.000000</now>
+    <previous_uptime>3600.000000</previous_uptime>
+    <session_active_duration>27000.000000</session_active_duration>
+    <session_gpu_active_duration>26000.000000</session_gpu_active_duration>
+</time_stats>
+"""
+    + inner(web_state.projects, "project").split("</project>")[0]
+    + """</project>
+<app>
+    <name>period_search</name>
+    <user_friendly_name>Period Search Application</user_friendly_name>
+    <non_cpu_intensive>0</non_cpu_intensive>
+</app>
+<app_version>
+    <app_name>period_search</app_name>
+    <version_num>10222</version_num>
+    <platform>x86_64-pc-linux-gnu</platform>
+    <plan_class>opencl_101_amd_linux</plan_class>
+    <file_ref>
+        <file_name>period_search_10222_linux_opencl_x64</file_name>
+        <main_program/>
+    </file_ref>
+    <file_ref>
+        <file_name>libOpenCL.so</file_name>
+        <open_name>libOpenCL.so.1</open_name>
+        <copy_file/>
+    </file_ref>
+    <avg_ncpus>0.010000</avg_ncpus>
+    <flops>39683185388.323620</flops>
+    <coproc>
+        <type>ATI</type>
+        <count>0.500000</count>
+    </coproc>
+    <dont_throttle/>
+</app_version>
+<workunit>
+    <name>ps_261115_input_6651_108</name>
+    <app_name>period_search</app_name>
+    <version_num>10222</version_num>
+    <rsc_fpops_est>8319704636358.558594</rsc_fpops_est>
+    <rsc_fpops_bound>831970463635855.875000</rsc_fpops_bound>
+    <rsc_memory_bound>64000000.000000</rsc_memory_bound>
+    <rsc_disk_bound>100000000.000000</rsc_disk_bound>
+    <command_line>
+--device 0
+    </command_line>
+    <file_ref>
+        <file_name>ps_261115_input_6651_108</file_name>
+        <open_name>period_search_in</open_name>
+    </file_ref>
+<job_keywords>
+<keyword>
+   <name>Astronomy</name>
+   <description>Astronomy and astrophysics</description>
+   <parent>0</parent>
+   <level>0</level>
+   <category>0</category>
+</keyword>
+</job_keywords>
+</workunit>
+"""
+    + inner(web_state.results, "result").split("</result>")[0]
+    + """</result>
+<platform_name>x86_64-pc-linux-gnu</platform_name>
+<core_client_major_version>8</core_client_major_version>
+<core_client_minor_version>2</core_client_minor_version>
+<core_client_release>9</core_client_release>
+<executing_as_daemon>1</executing_as_daemon>
+<platform>x86_64-pc-linux-gnu</platform>
+<platform>i686-pc-linux-gnu</platform>
+<global_preferences>
+   <source_project>https://example.org/</source_project>
+   <mod_time>1794000000.000000</mod_time>
+   <battery_charge_min_pct>90.000000</battery_charge_min_pct>
+   <battery_max_temperature>40.000000</battery_max_temperature>
+   <run_on_batteries>0</run_on_batteries>
+   <run_if_user_active>1</run_if_user_active>
+   <run_gpu_if_user_active>1</run_gpu_if_user_active>
+   <suspend_if_no_recent_input>0.000000</suspend_if_no_recent_input>
+   <suspend_cpu_usage>25.000000</suspend_cpu_usage>
+   <start_hour>0.000000</start_hour>
+   <end_hour>0.000000</end_hour>
+   <net_start_hour>0.000000</net_start_hour>
+   <net_end_hour>0.000000</net_end_hour>
+   <leave_apps_in_memory>1</leave_apps_in_memory>
+   <confirm_before_connecting>1</confirm_before_connecting>
+   <hangup_if_dialed>0</hangup_if_dialed>
+   <dont_verify_images>0</dont_verify_images>
+   <work_buf_min_days>0.100000</work_buf_min_days>
+   <work_buf_additional_days>0.500000</work_buf_additional_days>
+   <max_ncpus_pct>100.000000</max_ncpus_pct>
+   <niu_max_ncpus_pct>100.000000</niu_max_ncpus_pct>
+   <niu_cpu_usage_limit>100.000000</niu_cpu_usage_limit>
+   <niu_suspend_cpu_usage>50.000000</niu_suspend_cpu_usage>
+   <cpu_scheduling_period_minutes>60.000000</cpu_scheduling_period_minutes>
+   <disk_interval>60.000000</disk_interval>
+   <disk_max_used_gb>0.000000</disk_max_used_gb>
+   <disk_max_used_pct>90.000000</disk_max_used_pct>
+   <disk_min_free_gb>1.000000</disk_min_free_gb>
+   <vm_max_used_pct>75.000000</vm_max_used_pct>
+   <ram_max_used_busy_pct>50.000000</ram_max_used_busy_pct>
+   <ram_max_used_idle_pct>90.000000</ram_max_used_idle_pct>
+   <idle_time_to_run>3.000000</idle_time_to_run>
+   <max_bytes_sec_up>0.000000</max_bytes_sec_up>
+   <max_bytes_sec_down>0.000000</max_bytes_sec_down>
+   <cpu_usage_limit>100.000000</cpu_usage_limit>
+   <daily_xfer_limit_mb>0.000000</daily_xfer_limit_mb>
+   <daily_xfer_period_days>0</daily_xfer_period_days>
+   <override_file_present>1</override_file_present>
+   <network_wifi_only>0</network_wifi_only>
+   <max_cpus>8</max_cpus>
+   <day_prefs>
+      <day_of_week>0</day_of_week>
+      <start_hour>8.00</start_hour>
+      <end_hour>20.00</end_hour>
+   </day_prefs>
+   <day_prefs>
+      <day_of_week>6</day_of_week>
+      <net_start_hour>1.00</net_start_hour>
+      <net_end_hour>7.00</net_end_hour>
+   </day_prefs>
+</global_preferences>
+<host_venue>home</host_venue>
+</client_state>
+</boinc_gui_rpc_reply>
+"""
+)
+
+
+class StateTest(RPCClientTestCase):
+
+    replies = (STATE,)
+
+    async def test_returns_each_kind_in_its_list(self):
+        state = await self.client.get_state()
+        self.assertEqual(self.boinc.requests, ["<get_state/>"])
+        self.assertEqual(
+            {key: len(state[key]) for key in ("projects", "apps", "app_versions", "workunits", "results")},
+            {"projects": 1, "apps": 1, "app_versions": 1, "workunits": 1, "results": 1},
+        )
+        self.assertIsInstance(state["projects"][0], Project)
+        self.assertEqual(state["platforms"], ["x86_64-pc-linux-gnu", "i686-pc-linux-gnu"])
+        self.assertEqual(state["host_info"]["p_ncpus"], 4)
+        self.assertEqual(state["results"][0]["state"], ResultState.FILES_DOWNLOADED)
+
+    async def test_an_app_a_version_and_a_workunit_have_their_project(self):
+        state = await self.client.get_state()
+        project = state["projects"][0]
+        for key in ("apps", "app_versions", "workunits"):
+            with self.subTest(key):
+                self.assertEqual(state[key][0]["project_url"], project)
+                self.assertIsInstance(state[key][0]["project_url"], Project)
+
+    async def test_a_gpu_used_in_part_is_a_fraction(self):
+        app_version = (await self.client.get_state())["app_versions"][0]
+        self.assertEqual(app_version["coproc"], {"type": "ATI", "count": 0.5})
+
+    async def test_every_file_is_there_with_its_flags(self):
+        state = await self.client.get_state()
+        files = state["app_versions"][0]["file_ref"]
+        self.assertEqual([f["file_name"] for f in files], ["period_search_10222_linux_opencl_x64", "libOpenCL.so"])
+        self.assertEqual(
+            [(f["main_program"], f["copy_file"], f["optional"]) for f in files],
+            [(True, False, False), (False, True, False)],
+        )
+        self.assertEqual(state["app_versions"][0]["is_wrapper"], False)
+        self.assertEqual(state["app_versions"][0]["dont_throttle"], True)
+
+    async def test_a_workunit_has_its_command_line_and_keywords(self):
+        workunit = (await self.client.get_state())["workunits"][0]
+        self.assertEqual(workunit["command_line"], "--device 0")
+        self.assertEqual(workunit["rsc_fpops_est"], 8319704636358.558594)
+        self.assertEqual(
+            workunit["job_keywords"],
+            [
+                {
+                    "name": "Astronomy",
+                    "description": "Astronomy and astrophysics",
+                    "parent": 0,
+                    "level": 0,
+                    "category": "0",
+                }
+            ],
+        )
+
+    async def test_the_client_and_its_statistics_are_typed(self):
+        state = await self.client.get_state()
+        self.assertEqual(
+            [state["core_client_major_version"], state["core_client_minor_version"], state["core_client_release"]],
+            [8, 2, 9],
+        )
+        self.assertIs(state["executing_as_daemon"], True)
+        self.assertIs(state["have_cuda"], True)
+        self.assertIs(state["have_ati"], False)
+        self.assertEqual(state["net_stats"]["avg_time_up"], datetime.fromtimestamp(1795027437.639985, UTC))
+        self.assertEqual(state["time_stats"]["now"], datetime.fromtimestamp(1795027500, UTC))
+        self.assertEqual(state["time_stats"]["previous_uptime"], 3600.0)
+        self.assertEqual(state["host_venue"], "home")
+
+    async def test_the_global_preferences_are_typed(self):
+        prefs = (await self.client.get_state())["global_preferences"]
+        self.assertIs(prefs["run_on_batteries"], False)
+        self.assertIs(prefs["leave_apps_in_memory"], True)
+        self.assertEqual(prefs["suspend_cpu_usage"], 25.0)
+        self.assertEqual(prefs["max_cpus"], 8)
+        self.assertEqual(prefs["mod_time"], datetime.fromtimestamp(1794000000, UTC))
+        self.assertEqual(
+            prefs["day_prefs"],
+            [
+                {"day_of_week": 0, "start_hour": 8.0, "end_hour": 20.0},
+                {"day_of_week": 6, "net_start_hour": 1.0, "net_end_hour": 7.0},
+            ],
+        )
+
+
 class StatisticsTest(RPCClientTestCase):
 
     # As PROJECT::write_statistics() in client/project.cpp writes them

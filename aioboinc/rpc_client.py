@@ -12,12 +12,13 @@ from hashlib import md5
 from typing import Any, cast
 
 from ._constants import Mode
-from ._parse import Project, parse_generic, parse_project, parse_result, with_flags
+from ._parse import Project, parse_generic, parse_project, parse_result, parse_state, with_flags
 from ._raw_client import DEFAULT_TIMEOUT, GUI_RPC_DEFAULT_PORT, _RPCClientRaw
 from ._tag import Tag
 from ._types import (
     AcctMgrInfo,
     CcStatus,
+    ClientState,
     DailyXfer,
     DiskUsage,
     FileTransfer,
@@ -419,6 +420,31 @@ class RPCClient:
         if translatable:
             ET.SubElement(req, Tag.TRANSLATABLE)
         return parse_generic(await self._request(req, Tag.MSGS))
+
+    async def get_state(self) -> ClientState:
+        """
+        Get the whole state of the BOINC client in one reply: the host, the projects and their apps,
+        app versions, workunits and tasks, and the global preferences in use
+
+        It is the largest reply, hundreds of kilobytes with many tasks. For what the other queries
+        return, they are cheaper.
+
+        Returns:
+            A ClientState, a dict with:
+                host_info: As get_host_info() returns it.
+                projects: A list of the projects, as get_project_status() returns them.
+                apps, app_versions, workunits: Lists of the apps, app versions and workunits of
+                    every project, each with its project_url, a Project, as a task has.
+                results: A list of the tasks, as get_results() returns them.
+                net_stats, time_stats: The use of the network, and how much the client runs and
+                    computes.
+                global_preferences: The computing preferences in use.
+                platform_name, platforms, core_client_major_version, core_client_minor_version,
+                core_client_release, executing_as_daemon: The client and its platforms.
+            and have_cuda, have_ati, and host_venue when the host has one.
+        """
+        req = ET.Element(Tag.GET_STATE)
+        return cast(ClientState, parse_state(await self._request(req, Tag.CLIENT_STATE)))
 
     async def get_statistics(self) -> list[ProjectStatistics]:
         """
