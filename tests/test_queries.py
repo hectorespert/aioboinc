@@ -36,6 +36,27 @@ class ExchangeVersionsTest(RPCClientTestCase):
         self.assertEqual(self.boinc.requests, ["<exchange_versions/>"])
 
 
+class EmptyDictReplyTest(RPCClientTestCase):
+
+    # A reply that is a dict with nothing in it, as <tag/> and with the newline between its tags
+    replies = tuple(
+        f"<boinc_gui_rpc_reply>{reply}</boinc_gui_rpc_reply>"
+        for tag in ("server_version", "acct_mgr_info", "cc_status", "host_info")
+        for reply in (f"<{tag}/>", f"<{tag}>\n</{tag}>")
+    )
+
+    async def test_is_an_empty_dict_with_its_flags(self):
+        for query, expected in (
+            (self.client.exchange_versions, {}),
+            (self.client.get_acct_mgr_info, {"have_credentials": False, "cookie_required": False}),
+            (self.client.get_cc_status, {"manager_must_quit": False}),
+            (self.client.get_host_info, {}),
+        ):
+            for form in ("self-closing", "with a newline"):
+                with self.subTest(query=query.__name__, form=form):
+                    self.assertEqual(await query(), expected)
+
+
 class AcctMgrInfoTest(RPCClientTestCase):
 
     # As handle_acct_mgr_info() in client/gui_rpc_server_ops.cpp writes it, with an account manager
