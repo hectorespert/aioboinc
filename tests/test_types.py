@@ -8,7 +8,7 @@ the queries write as the BOINC client does.
 from typing import get_type_hints, is_typeddict
 
 import aioboinc
-from aioboinc import CcStatus, DiskUsage, ProjectDiskUsage, Version
+from aioboinc import CcStatus, DiskUsage, HostInfo, ProjectDiskUsage, Version, WslDistro, WslGpu
 
 from .fake_boinc import RPCClientTestCase
 from .fixtures import web_state
@@ -57,6 +57,50 @@ class DiskUsageTypeTest(TypesTest):
         self.assertMatches(disk_usage, DiskUsage)
         for project in disk_usage["project"]:
             self.assertMatches(project, ProjectDiskUsage)
+
+
+class HostInfoTypeTest(TypesTest):
+
+    replies = (
+        web_state.host_info,
+        # The fields a current client adds on a Windows host with a WSL distribution
+        web_state.host_info.replace(
+            "</host_info>",
+            """    <wsl_version>2.3.26.0</wsl_version>
+    <wsl>
+        <distro>
+            <distro_name>boinc-buda-runner</distro_name>
+            <os_name>Ubuntu</os_name>
+            <os_version>22.04</os_version>
+            <wsl_version>2</wsl_version>
+            <distro_version>3</distro_version>
+            <is_default/>
+            <libc_version>2.35</libc_version>
+            <docker_version>4.9.3</docker_version>
+            <docker_type>2</docker_type>
+            <wsl_gpu>
+                <name>NVIDIA GeForce RTX 3060</name>
+                <has_cuda/>
+            </wsl_gpu>
+        </distro>
+    </wsl>
+    <product_name>Example PC</product_name>
+    <virtualbox_version>7.0.20</virtualbox_version>
+</host_info>""",
+        ),
+    )
+
+    async def test_matches_the_reply(self):
+        self.assertMatches(await self.client.get_host_info(), HostInfo)
+
+    async def test_matches_the_reply_with_wsl(self):
+        await self.client.get_host_info()
+        info = await self.client.get_host_info()
+        self.assertMatches(info, HostInfo)
+        for distro in info["wsl"]:
+            self.assertMatches(distro, WslDistro)
+            for gpu in distro["wsl_gpu"]:
+                self.assertMatches(gpu, WslGpu)
 
 
 class ExportedTypesTest(TypesTest):

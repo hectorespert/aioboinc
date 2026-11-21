@@ -134,8 +134,8 @@ a message is a `MessagePriority`, the `sched_rpc_pending` of a project a `RpcRea
 `docker_type` of the host a `DockerType`. A number the enum does not have, from a newer BOINC
 client, comes as an `int`. The type depends on the element, and an
 element the parser does not know comes as a `str`. The replies of `exchange_versions()`,
-`get_cc_status()` and `get_disk_usage()` are typed, as the `TypedDict` `Version`, `CcStatus` and
-`DiskUsage` importable from `aioboinc`: still dicts, they let an editor or mypy check their keys. What a project sends once for each resource,
+`get_cc_status()`, `get_disk_usage()` and `get_host_info()` are typed, as the `TypedDict`
+`Version`, `CcStatus`, `DiskUsage` and `HostInfo` importable from `aioboinc`: still dicts, they let an editor or mypy check their keys. What a project sends once for each resource,
 such as CPU or NVIDIA, is a dict by the name of the resource, as `rsc_backoff_time`, or a list of
 the names, as `no_rsc_apps`.
 
