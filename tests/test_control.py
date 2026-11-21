@@ -88,6 +88,41 @@ class UnknownProjectTest(RPCClientTestCase):
             await self.client.update_project("https://unknown.example.org/")
 
 
+TRANSFER = ("https://example.org/", "result_0_r1_sent_0")
+TRANSFER_XML = "<project_url>https://example.org/</project_url><filename>result_0_r1_sent_0</filename>"
+
+
+class FileTransferControlTest(RPCClientTestCase):
+
+    async def test_retry_file_transfer(self):
+        self.assertIs(await self.client.retry_file_transfer(*TRANSFER), True)
+        self.assertEqual(
+            self.boinc.requests, ["<retry_file_transfer>" + TRANSFER_XML + "</retry_file_transfer>"]
+        )
+
+    async def test_abort_file_transfer(self):
+        self.assertIs(await self.client.abort_file_transfer(*TRANSFER), True)
+        self.assertEqual(
+            self.boinc.requests, ["<abort_file_transfer>" + TRANSFER_XML + "</abort_file_transfer>"]
+        )
+
+    async def test_a_transfer_can_be_named_by_the_project_a_query_returned(self):
+        await self.client.retry_file_transfer(Project(master_url=TRANSFER[0]), TRANSFER[1])
+        self.assertEqual(
+            self.boinc.requests, ["<retry_file_transfer>" + TRANSFER_XML + "</retry_file_transfer>"]
+        )
+
+
+class NoSuchTransferTest(RPCClientTestCase):
+
+    # As the BOINC client answers for a file it has but does not transfer
+    replies = ("<boinc_gui_rpc_reply><error>No such transfer waiting</error></boinc_gui_rpc_reply>",)
+
+    async def test_raises_command_error(self):
+        with self.assertRaisesRegex(BOINCCommandError, "No such transfer waiting"):
+            await self.client.retry_file_transfer(*TRANSFER)
+
+
 class ClientControlTest(RPCClientTestCase):
 
     async def test_quit(self):

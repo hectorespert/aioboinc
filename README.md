@@ -145,6 +145,8 @@ To control it, after `authorize()`. Each returns `True` when BOINC answers with 
 | `detach_project(project)` | Detaches from a project, losing its tasks. It cannot be undone |
 | `detach_project_when_done(project)` | Detaches from a project once its tasks are done and reported, asking it for no more |
 | `dont_detach_project_when_done(project)` | Cancels `detach_project_when_done()` |
+| `retry_file_transfer(project_url, name)` | Retries an upload or a download now. `project_url` and `name` are those of a transfer from `get_file_transfers()` |
+| `abort_file_transfer(project_url, name)` | Aborts an upload or a download; the tasks that need the file fail. It cannot be undone |
 | `set_run_mode(mode, duration=0)` | Sets when BOINC computes: `Mode.ALWAYS`, `Mode.AUTO`, `Mode.NEVER`, or `Mode.RESTORE` to end a temporary mode. A `duration` in seconds makes it temporary |
 | `set_gpu_mode(mode, duration=0)` | The same for the GPU |
 | `set_network_mode(mode, duration=0)` | The same for the network |
