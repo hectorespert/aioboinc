@@ -313,6 +313,15 @@ LIST_TAG = {
     Tag.JOB_KEYWORDS,
 }
 
+# The replies that are a dict, so that an empty one is {} and not its text, as LIST_TAG does for a
+# list. A real client always fills them, but a broken one or a fake server may not.
+DICT_TAG = {
+    Tag.ACCT_MGR_INFO,
+    Tag.CC_STATUS,
+    Tag.HOST_INFO,
+    Tag.SERVER_VERSION,
+}
+
 # An element that comes once for each of something, side by side with other elements, such as the
 # OpenCL properties of the CPU for each OpenCL platform in get_host_info(). They are a list, there
 # only when there is one at least.
@@ -497,7 +506,7 @@ def parse_generic(e: ET.Element):
         # Checked first, so that an empty list is [], whether it comes as <results/> or with the
         # newline between its tags.
         return [parse_generic(cc) for cc in e]
-    elif len(e) > 0:
+    elif len(e) > 0 or e.tag in DICT_TAG:
         # recurse on elements with children
         res: dict[str, Any] = {}
         for c in e:

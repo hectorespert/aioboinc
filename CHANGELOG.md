@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- **Fixed** an empty reply of `exchange_versions()`, `get_acct_mgr_info()`, `get_cc_status()` or
+  `get_host_info()`: it is now `{}`, with the flags `False` where the reply has them, as an empty
+  list is `[]`. `get_host_info()` and `exchange_versions()` returned its text, such as `"\n"`, and
+  `get_cc_status()` and `get_acct_mgr_info()` raised `TypeError`. A real client always fills them,
+  so only a broken client or a fake server sent one (#65).
+
 ## 0.12.0
 
 - **Added** `get_state()`, the whole state of the BOINC client in one reply: the host, the projects
