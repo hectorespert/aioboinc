@@ -258,6 +258,9 @@ TIME_TAG = {
     Tag.NEXT_REQUEST_TIME,
     Tag.PROJECT_FILES_DOWNLOADED_TIME,
     Tag.COMPLETED_TIME,
+    # Of a notice
+    Tag.CREATE_TIME,
+    Tag.ARRIVAL_TIME,
 }
 
 # The enum of each element that is a state or a reason
@@ -283,6 +286,8 @@ ENUM_TAG: dict[str, type[IntEnum]] = {
 
 TAG_PARSER: dict[str, Callable[[str], Any]] = {
     Tag.BODY: lambda x: x.replace("<![CDATA[", "").replace("]]>", "").strip(),
+    # Of a notice, which BOINC writes between newlines
+    Tag.DESCRIPTION: str.strip,
     Tag.PROJECT_URL: lambda x: Project(master_url=x)
 }
 INTEGER_TAG_PARSER = int
