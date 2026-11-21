@@ -428,8 +428,9 @@ def parse_generic(e: ET.Element):
 
 
 def parse_project(e: ET.Element) -> "Project":
-    # The lists of resources are there, empty, when BOINC sends none
+    # The lists of resources, and of links, are there, empty, when BOINC sends none
     fields: dict[str, Any] = {tag: [] for tag in RESOURCE_NAMES_TAG}
+    fields[Tag.GUI_URLS] = []
     fields.update(parse_generic(e))
     return Project(**fields)
 
@@ -441,9 +442,87 @@ class Project:
     Its fields are attributes, such as project_name or user_total_credit; a project of a task has
     only master_url. It compares equal, and hashes the same, as its master URL, so either can look
     the other up in a set or a dict.
+
+    A flag BOINC sends only when it is set is False when it does not, and a value it sends only
+    sometimes is None when it does not. On a project of a task they are those defaults too.
     """
 
     master_url: str
+    project_name: str
+    symstore: str
+    user_name: str
+    team_name: str
+    host_venue: str
+    email_hash: str
+    cross_project_id: str
+    external_cpid: str
+    cpid_time: datetime | None
+    user_total_credit: float
+    user_expavg_credit: float
+    user_create_time: datetime | None
+    rpc_seqno: int
+    userid: int
+    teamid: int
+    hostid: int
+    host_total_credit: float
+    host_expavg_credit: float
+    host_create_time: datetime | None
+    nrpc_failures: int
+    master_fetch_failures: int
+    # Until when the project is backed off, and when it asked to be contacted next
+    min_rpc_time: datetime | None
+    next_rpc_time: datetime | None
+    rec: float
+    rec_time: datetime | None
+    resource_share: float
+    desired_disk_usage: float
+    duration_correction_factor: float
+    sched_rpc_pending: RpcReason | int
+    send_time_stats_log: int
+    send_job_log: int
+    njobs_success: int
+    njobs_error: int
+    elapsed_time: timedelta
+    last_rpc_time: datetime | None
+    # By the name of the resource, such as CPU or NVIDIA
+    rsc_backoff_time: dict[str, datetime | None]
+    rsc_backoff_interval: dict[str, float]
+    # The resources each applies to, [] when none
+    no_rsc_ams: list[str]
+    no_rsc_apps: list[str]
+    no_rsc_config: list[str]
+    no_rsc_pref: list[str]
+    # The links of the project to show, with name, description and url, [] when none
+    gui_urls: list[dict[str, Any]]
+    sched_priority: float
+    project_files_downloaded_time: datetime | None
+    project_dir: str
+
+    # Bytes of the disk it uses, and may use; since BOINC 7.16.8
+    disk_usage: float | None = None
+    disk_share: float | None = None
+    # Seconds left of the backoff of its downloads and uploads, while there is one
+    download_backoff: float | None = None
+    upload_backoff: float | None = None
+    # The resource share an account manager has set
+    ams_resource_share_new: float | None = None
+    # The venue of the host, when it has one
+    venue: str | None = None
+
+    anonymous_platform: bool = False
+    master_url_fetch_pending: bool = False
+    trickle_up_pending: bool = False
+    send_full_workload: bool = False
+    dont_use_dcf: bool = False
+    non_cpu_intensive: bool = False
+    strict_memory_bound: bool = False
+    suspended_via_gui: bool = False
+    dont_request_more_work: bool = False
+    detach_when_done: bool = False
+    ended: bool = False
+    attached_via_acct_mgr: bool = False
+    scheduler_rpc_in_progress: bool = False
+    use_symlinks: bool = False
 
     def __init__(self, *args, **kwargs):
         self.__dict__ = kwargs
