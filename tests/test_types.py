@@ -8,7 +8,7 @@ the queries write as the BOINC client does.
 from typing import get_type_hints, is_typeddict
 
 import aioboinc
-from aioboinc import CcStatus, DiskUsage, HostInfo, ProjectDiskUsage, Version, WslDistro, WslGpu
+from aioboinc import CcStatus, DiskUsage, HostInfo, Project, ProjectDiskUsage, Version, WslDistro, WslGpu
 
 from .fake_boinc import RPCClientTestCase
 from .fixtures import web_state
@@ -101,6 +101,38 @@ class HostInfoTypeTest(TypesTest):
             self.assertMatches(distro, WslDistro)
             for gpu in distro["wsl_gpu"]:
                 self.assertMatches(gpu, WslGpu)
+
+
+class ProjectTypeTest(TypesTest):
+
+    replies = (web_state.projects,)
+
+    async def test_matches_the_reply(self):
+        annotations = get_type_hints(Project)
+        with_default = {name for name in annotations if name in vars(Project)}
+        for project in await self.client.get_project_status():
+            with self.subTest(project.master_url):
+                # Every field without a default is there, and every field there is annotated
+                self.assertLessEqual(annotations.keys() - with_default, vars(project).keys())
+                self.assertLessEqual(vars(project).keys(), annotations.keys())
+
+    async def test_a_flag_that_is_not_sent_is_false_and_a_value_none(self):
+        project = (await self.client.get_project_status())[0]
+        self.assertNotIn("suspended_via_gui", vars(project))
+        self.assertIs(project.suspended_via_gui, False)
+        self.assertIsNone(project.download_backoff)
+
+    async def test_a_flag_that_is_sent_is_true(self):
+        # dont_use_dcf is set on the first project of the captured reply
+        project = (await self.client.get_project_status())[0]
+        self.assertIs(project.dont_use_dcf, True)
+
+    def test_the_defaults_are_not_shared_mutable_values(self):
+        # A list or a dict on the class would be one for every project
+        for name in vars(Project):
+            if not name.startswith("_"):
+                with self.subTest(name):
+                    self.assertNotIsInstance(getattr(Project, name), (list, dict, set))
 
 
 class ExportedTypesTest(TypesTest):

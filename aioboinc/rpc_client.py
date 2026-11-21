@@ -513,7 +513,7 @@ class RPCClient:
         # The tasks come as repeated <old_result> elements, which a dict keeps only the last of
         return [parse_generic(c) for c in await self._request(req, Tag.OLD_RESULTS)]
 
-    async def get_project_status(self):
+    async def get_project_status(self) -> list[Project]:
         """
         Get the projects the BOINC client is attached to
 
@@ -524,7 +524,9 @@ class RPCClient:
             which the project does not ask for work for it, or None, and the seconds it backs off
             for, as float. no_rsc_apps, no_rsc_ams, no_rsc_pref and no_rsc_config are a list of the
             resources each applies to, empty when none. sched_rpc_pending is a RpcReason, NONE
-            when BOINC is not to contact the project.
+            when BOINC is not to contact the project. A flag BOINC sends only when it is set, such
+            as suspended_via_gui or dont_request_more_work, is False when it does not, and a value
+            it sends only sometimes, such as download_backoff, None.
         """
         req = ET.Element(Tag.GET_PROJECT_STATUS)
         return [parse_project(c) for c in await self._request(req, Tag.PROJECTS)]
