@@ -8,7 +8,18 @@ the queries write as the BOINC client does.
 from typing import get_type_hints, is_typeddict
 
 import aioboinc
-from aioboinc import CcStatus, DiskUsage, HostInfo, Project, ProjectDiskUsage, Version, WslDistro, WslGpu
+from aioboinc import (
+    ActiveTask,
+    CcStatus,
+    DiskUsage,
+    HostInfo,
+    Project,
+    ProjectDiskUsage,
+    Result,
+    Version,
+    WslDistro,
+    WslGpu,
+)
 
 from .fake_boinc import RPCClientTestCase
 from .fixtures import web_state
@@ -133,6 +144,18 @@ class ProjectTypeTest(TypesTest):
             if not name.startswith("_"):
                 with self.subTest(name):
                     self.assertNotIsInstance(getattr(Project, name), (list, dict, set))
+
+
+class ResultTypeTest(TypesTest):
+
+    replies = (web_state.results,)
+
+    async def test_matches_the_reply(self):
+        for result in await self.client.get_results():
+            with self.subTest(result["name"]):
+                self.assertMatches(result, Result)
+                if "active_task" in result:
+                    self.assertMatches(result["active_task"], ActiveTask)
 
 
 class ExportedTypesTest(TypesTest):

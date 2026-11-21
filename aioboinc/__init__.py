@@ -10,7 +10,17 @@ from ._constants import (
     SuspendReason,
 )
 from ._parse import Project
-from ._types import CcStatus, DiskUsage, HostInfo, ProjectDiskUsage, Version, WslDistro, WslGpu
+from ._types import (
+    ActiveTask,
+    CcStatus,
+    DiskUsage,
+    HostInfo,
+    ProjectDiskUsage,
+    Result,
+    Version,
+    WslDistro,
+    WslGpu,
+)
 from .exceptions import (
     BOINCAuthError,
     BOINCClientError,
@@ -23,6 +33,7 @@ from .exceptions import (
 from .rpc_client import RPCClient, init_rpc_client
 
 __all__ = [
+    "ActiveTask",
     "ActiveTaskState",
     "BOINCAuthError",
     "BOINCClientError",
@@ -41,6 +52,7 @@ __all__ = [
     "Project",
     "ProjectDiskUsage",
     "RPCClient",
+    "Result",
     "ResultState",
     "RpcReason",
     "SchedulerState",
