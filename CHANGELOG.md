@@ -10,6 +10,9 @@
   lose the work done on its tasks; detaching when done keeps it.
 - **Added** `retry_file_transfer()` and `abort_file_transfer()`, which take the `project_url` and
   `name` of a transfer from `get_file_transfers()`. Aborting fails the tasks that need the file.
+- **Added** `get_notices()` and `get_notices_public()`, which return the notices newer than a
+  sequence number, oldest first, under `notices`. When BOINC has removed notices, `refresh` is
+  `True` and `notices` holds all of them, to replace those got before.
 
 ## 0.9.0
 

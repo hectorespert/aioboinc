@@ -337,6 +337,90 @@ class MessagesTest(RPCClientTestCase):
         )
 
 
+NOTICE = """<notice>
+   <title>Downtime on Tuesday</title>
+   <description><![CDATA[
+The project will be down on Tuesday.<br />
+Sorry.
+]]></description>
+   <create_time>1792672125.000000</create_time>
+   <arrival_time>1792730460.500000</arrival_time>
+   <is_private>0</is_private>
+   <project_name>Example@home</project_name>
+   <category></category>
+   <link><![CDATA[https://example.org/forum_thread.php?id=1]]></link>
+   <seqno>{seqno}</seqno>
+</notice>
+"""
+
+
+def notices_reply(*notices):
+    return "<boinc_gui_rpc_reply>\n<notices>\n" + "".join(notices) + "</notices>\n</boinc_gui_rpc_reply>"
+
+
+class NoticesTest(RPCClientTestCase):
+
+    # As NOTICES::write() in client/cs_notice.cpp writes them, oldest first
+    replies = (notices_reply(NOTICE.format(seqno=1), NOTICE.format(seqno=2)),)
+
+    async def test_returns_every_notice_parsed(self):
+        reply = await self.client.get_notices()
+        self.assertEqual(self.boinc.requests, ["<get_notices><seqno>0</seqno></get_notices>"])
+        self.assertIs(reply["refresh"], False)
+        self.assertEqual([n["seqno"] for n in reply["notices"]], [1, 2])
+        notice = reply["notices"][0]
+        self.assertEqual(notice["title"], "Downtime on Tuesday")
+        self.assertEqual(notice["description"], "The project will be down on Tuesday.<br />\nSorry.")
+        self.assertEqual(notice["create_time"], datetime.fromtimestamp(1792672125, UTC))
+        self.assertEqual(notice["arrival_time"], datetime.fromtimestamp(1792730460.5, UTC))
+        self.assertIs(notice["is_private"], False)
+        self.assertEqual(notice["project_name"], "Example@home")
+        self.assertEqual(notice["category"], "")
+        self.assertEqual(notice["link"], "https://example.org/forum_thread.php?id=1")
+
+    async def test_asks_from_a_sequence_number(self):
+        await self.client.get_notices(2)
+        self.assertEqual(self.boinc.requests, ["<get_notices><seqno>2</seqno></get_notices>"])
+
+
+class NoNoticesTest(RPCClientTestCase):
+
+    replies = (notices_reply(),)
+
+    async def test_returns_an_empty_list(self):
+        self.assertEqual(await self.client.get_notices(5), {"refresh": False, "notices": []})
+
+
+class NoticesRefreshTest(RPCClientTestCase):
+
+    # After removing notices, BOINC sends a notice with seqno -1 and then all of them, whatever
+    # the sequence number asked from
+    replies = (
+        notices_reply(
+            NOTICE.format(seqno=-1).replace("1792672125.000000", "0.000000"),
+            NOTICE.format(seqno=1),
+            NOTICE.format(seqno=3),
+        ),
+    )
+
+    async def test_says_so_and_leaves_out_the_marker(self):
+        reply = await self.client.get_notices(3)
+        self.assertIs(reply["refresh"], True)
+        self.assertEqual([n["seqno"] for n in reply["notices"]], [1, 3])
+
+
+class NoticesPublicTest(RPCClientTestCase):
+
+    replies = (notices_reply(NOTICE.format(seqno=1)),)
+
+    async def test_asks_for_the_public_ones(self):
+        reply = await self.client.get_notices_public(0)
+        self.assertEqual(
+            self.boinc.requests, ["<get_notices_public><seqno>0</seqno></get_notices_public>"]
+        )
+        self.assertEqual([n["seqno"] for n in reply["notices"]], [1])
+
+
 class ProjectStatusTest(RPCClientTestCase):
 
     replies = (web_state.projects,)

@@ -321,6 +321,8 @@ class WrongReplyTest(RPCClientTestCase):
         "get_host_info": "host_info",
         "get_message_count": "seqno",
         "get_messages": "msgs",
+        "get_notices": "notices",
+        "get_notices_public": "notices",
         "get_project_status": "projects",
         "get_results": "results",
     }

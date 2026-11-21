@@ -357,6 +357,55 @@ class RPCClient:
             ET.SubElement(req, Tag.TRANSLATABLE)
         return parse_generic(await self._request(req, Tag.MSGS))
 
+    async def get_notices(self, seqno=0):
+        """
+        Get the notices newer than a sequence number, as the Notices tab of the BOINC Manager
+        shows them: from the projects' news feeds, their schedulers and the client itself
+
+        It needs authorize(), even from the host BOINC runs on; get_notices_public() does not.
+
+        Args:
+            seqno: Only the notices with a greater sequence number are returned. 0, the default,
+                returns them all. Pass the greatest seqno got so far to get only the new ones.
+
+        Returns:
+            A dict with:
+                refresh: True when BOINC has removed notices since the last call on this
+                    connection. notices then holds all of them, to replace those got before
+                    rather than be added to them.
+                notices: A list with a dict for each notice, oldest first, with seqno, title,
+                    description, an HTML text, create_time and arrival_time, as datetime in UTC,
+                    project_name, "" for a notice of the client itself, category, client or
+                    scheduler for theirs and "" for news, link and is_private.
+        """
+        return await self._get_notices(Tag.GET_NOTICES, seqno)
+
+    async def get_notices_public(self, seqno=0):
+        """
+        Get the notices that are not private, which needs no authorize()
+
+        Args:
+            seqno: As for get_notices().
+
+        Returns:
+            As get_notices(), leaving out the notices whose is_private is True.
+        """
+        return await self._get_notices(Tag.GET_NOTICES_PUBLIC, seqno)
+
+    async def _get_notices(self, tag: str, seqno):
+        req = ET.Element(tag)
+        s = ET.SubElement(req, Tag.SEQNO)
+        s.text = str(seqno)
+        notices = [parse_generic(c) for c in await self._request(req, Tag.NOTICES)]
+        # When notices have been removed, BOINC sends first a notice with seqno -1, which is not
+        # one, and then all of them, as RPC_CLIENT::get_notices() in lib/gui_rpc_client_ops.cpp reads
+        # it.
+        refresh = any(n.get(Tag.SEQNO) == -1 for n in notices)
+        return {
+            "refresh": refresh,
+            "notices": [n for n in notices if n.get(Tag.SEQNO) != -1],
+        }
+
     async def get_project_status(self):
         """
         Get the projects the BOINC client is attached to
