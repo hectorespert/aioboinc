@@ -118,7 +118,6 @@ FLOAT_TAG = {
     Tag.P_FPOPS,
     Tag.P_IOPS,
     Tag.P_MEMBW,
-    Tag.P_CALCULATED,
     Tag.M_NBYTES,
     Tag.M_CACHE,
     Tag.M_SWAP,
@@ -263,6 +262,8 @@ TIME_TAG = {
     Tag.NEXT_REQUEST_TIME,
     Tag.PROJECT_FILES_DOWNLOADED_TIME,
     Tag.COMPLETED_TIME,
+    # When the CPU benchmarks last ran, in get_host_info()
+    Tag.P_CALCULATED,
     # The midnight in UTC that begins a day of the statistics
     Tag.DAY,
     # Of a notice
