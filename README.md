@@ -136,6 +136,11 @@ To control it, after `authorize()`. Each returns `True` when BOINC answers with 
 | `suspend_result(project_url, name)` | Suspends a task. `project_url` and `name` are those of a task from `get_results()` |
 | `resume_result(project_url, name)` | Resumes a suspended task |
 | `abort_result(project_url, name)` | Aborts a task. It cannot be undone |
+| `update_project(project)` | Contacts a project now, to report the tasks done and ask for work. `project` is a `Project` from `get_project_status()` or its master URL |
+| `suspend_project(project)` | Suspends a project: its tasks are not computed nor transferred |
+| `resume_project(project)` | Resumes a suspended project |
+| `no_new_tasks(project)` | Stops asking a project for work; the tasks it has are still computed |
+| `allow_new_tasks(project)` | Asks a project for work again |
 | `set_run_mode(mode, duration=0)` | Sets when BOINC computes: `Mode.ALWAYS`, `Mode.AUTO`, `Mode.NEVER`, or `Mode.RESTORE` to end a temporary mode. A `duration` in seconds makes it temporary |
 | `set_gpu_mode(mode, duration=0)` | The same for the GPU |
 | `set_network_mode(mode, duration=0)` | The same for the network |

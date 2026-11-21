@@ -2,7 +2,7 @@
 Tests for the requests that change something on the BOINC client
 """
 
-from aioboinc import Project
+from aioboinc import BOINCCommandError, Project
 
 from .fake_boinc import RPCClientTestCase
 
@@ -32,6 +32,44 @@ class TaskControlTest(RPCClientTestCase):
         self.assertEqual(
             self.boinc.requests, ["<suspend_result>" + TASK_XML + "</suspend_result>"]
         )
+
+
+PROJECT_URL = "https://example.org/"
+PROJECT_XML = "<project_url>https://example.org/</project_url>"
+
+
+class ProjectControlTest(RPCClientTestCase):
+
+    OPS = {
+        "update_project": "project_update",
+        "suspend_project": "project_suspend",
+        "resume_project": "project_resume",
+        "no_new_tasks": "project_nomorework",
+        "allow_new_tasks": "project_allowmorework",
+    }
+
+    async def test_each_op_sends_its_request(self):
+        for method, tag in self.OPS.items():
+            with self.subTest(method):
+                self.boinc.requests.clear()
+                self.assertIs(await getattr(self.client, method)(PROJECT_URL), True)
+                self.assertEqual(self.boinc.requests, [f"<{tag}>{PROJECT_XML}</{tag}>"])
+
+    async def test_a_project_can_be_named_by_the_project_a_query_returned(self):
+        await self.client.suspend_project(Project(master_url=PROJECT_URL))
+        self.assertEqual(
+            self.boinc.requests, ["<project_suspend>" + PROJECT_XML + "</project_suspend>"]
+        )
+
+
+class UnknownProjectTest(RPCClientTestCase):
+
+    # As the BOINC client answers for a project it is not attached to
+    replies = ("<boinc_gui_rpc_reply><error>No such project</error></boinc_gui_rpc_reply>",)
+
+    async def test_raises_command_error(self):
+        with self.assertRaisesRegex(BOINCCommandError, "No such project"):
+            await self.client.update_project("https://unknown.example.org/")
 
 
 class ClientControlTest(RPCClientTestCase):
