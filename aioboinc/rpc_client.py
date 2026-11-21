@@ -12,7 +12,7 @@ from enum import Enum
 from hashlib import md5
 from typing import Any
 
-from ._parse import Project, parse_generic
+from ._parse import Project, parse_generic, parse_project
 from ._raw_client import DEFAULT_TIMEOUT, GUI_RPC_DEFAULT_PORT, _RPCClientRaw
 from ._tag import Tag
 from .exceptions import BOINCAuthError, BOINCClientError, BOINCCommandError, BOINCProtocolError
@@ -351,10 +351,14 @@ class RPCClient:
 
         Returns:
             A list with a Project for each one. Its fields are attributes, such as project_name or
-            user_total_credit, and it compares equal to its master_url.
+            user_total_credit, and it compares equal to its master_url. rsc_backoff_time and
+            rsc_backoff_interval are a dict by resource, such as CPU or NVIDIA: the datetime until
+            which the project does not ask for work for it, or None, and the seconds it backs off
+            for, as float. no_rsc_apps, no_rsc_ams, no_rsc_pref and no_rsc_config are a list of the
+            resources each applies to, empty when none.
         """
         req = ET.Element(Tag.GET_PROJECT_STATUS)
-        return [Project(**parse_generic(c)) for c in await self._request(req)]
+        return [parse_project(c) for c in await self._request(req)]
 
     async def get_results(self, active_only=False):
         """

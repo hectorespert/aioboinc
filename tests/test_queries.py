@@ -270,6 +270,67 @@ class ProjectStatusTest(RPCClientTestCase):
         self.assertIn("https://csgrid.org/csg/", {csgrid})
 
 
+class ProjectBackoffTest(RPCClientTestCase):
+
+    # As PROJECT::write_state() in client/project.cpp writes them, one of each per resource
+    replies = (
+        """<boinc_gui_rpc_reply>
+<projects>
+<project>
+    <master_url>http://www.gpugrid.net/</master_url>
+    <rsc_backoff_time>
+        <name>CPU</name>
+        <value>0.000000</value>
+    </rsc_backoff_time>
+    <rsc_backoff_interval>
+        <name>CPU</name>
+        <value>0.000000</value>
+    </rsc_backoff_interval>
+    <rsc_backoff_time>
+        <name>NVIDIA</name>
+        <value>1586729657.140112</value>
+    </rsc_backoff_time>
+    <rsc_backoff_interval>
+        <name>NVIDIA</name>
+        <value>600.000000</value>
+    </rsc_backoff_interval>
+    <no_rsc_pref>CPU</no_rsc_pref>
+    <no_rsc_apps>CPU</no_rsc_apps>
+    <no_rsc_apps>intel_gpu</no_rsc_apps>
+</project>
+</projects>
+</boinc_gui_rpc_reply>
+""",
+    )
+
+    async def test_each_resource_has_its_backoff(self):
+        (project,) = await self.client.get_project_status()
+        self.assertEqual(
+            project.rsc_backoff_time,
+            {"CPU": None, "NVIDIA": datetime.fromtimestamp(1586729657.140112, UTC)},
+        )
+        self.assertEqual(project.rsc_backoff_interval, {"CPU": 0.0, "NVIDIA": 600.0})
+
+    async def test_each_resource_a_flag_applies_to_is_listed(self):
+        (project,) = await self.client.get_project_status()
+        self.assertEqual(project.no_rsc_apps, ["CPU", "intel_gpu"])
+        self.assertEqual(project.no_rsc_pref, ["CPU"])
+        self.assertEqual(project.no_rsc_ams, [])
+        self.assertEqual(project.no_rsc_config, [])
+
+
+class ProjectBackoffOfCapturedReplyTest(RPCClientTestCase):
+
+    replies = (web_state.projects,)
+
+    async def test_no_resource_is_lost(self):
+        csgrid, gpugrid = await self.client.get_project_status()
+        self.assertEqual(csgrid.rsc_backoff_time, {"CPU": None, "NVIDIA": None})
+        self.assertEqual(csgrid.rsc_backoff_interval, {"CPU": 0.0, "NVIDIA": 0.0})
+        self.assertEqual(csgrid.no_rsc_apps, ["NVIDIA"])
+        self.assertEqual(gpugrid.no_rsc_apps, [])
+
+
 class ResultsTest(RPCClientTestCase):
 
     replies = (web_state.results,)

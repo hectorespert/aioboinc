@@ -7,6 +7,13 @@
   Apple GPU in the `coprocs` of `get_host_info()`. They are `bool`.
 - **Changed** `ams_password_error` of `get_cc_status()` from `int` to `bool`, like the other flags.
   `bool` is an `int`, so comparing it with `0` or `1` still works.
+- **Fixed** the elements a project of `get_project_status()` has once for each resource, such as
+  CPU or NVIDIA, keeping only the last resource. `rsc_backoff_time` and `rsc_backoff_interval` were
+  a dict with the `name` and `value` of that one, as strings; they are a dict by the name of the
+  resource, of the `datetime` until which the project does not ask for work for it, or `None`, and
+  of the seconds it backs off for, as `float`. `no_rsc_apps`, `no_rsc_ams`, `no_rsc_pref` and
+  `no_rsc_config` were the name of the last resource, and missing when there was none; they are a
+  list of the names, empty when there is none.
 
 ## 0.6.1
 
