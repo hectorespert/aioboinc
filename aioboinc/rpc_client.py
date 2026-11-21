@@ -80,7 +80,14 @@ def _append_project_element(root: ET.Element, project_url: Project | str, name):
 
 class RPCClient:
     """
-    Client for the GUI RPC protocol of a BOINC client, made by init_rpc_client()
+    Client for the GUI RPC protocol of a BOINC client
+
+    Made by init_rpc_client(), which connects it, or used as an async context manager, which
+    connects it on entering and closes it on leaving, even on an error:
+
+        async with RPCClient(host, password) as client:
+            await client.authorize()
+            ...
 
     Each method sends one request and waits for its reply. Requests made at once, for example with
     asyncio.gather(), wait for their turn. A reply is parsed into dicts and lists keyed by the
@@ -112,13 +119,23 @@ class RPCClient:
         timeout: float | None = DEFAULT_TIMEOUT,
     ):
         """
-        Should not be called directly, use init_rpc_client()
+        Create a client, without connecting it: use it with async with, or call connect()
+
+        Takes the same arguments as init_rpc_client().
         """
         self._raw_client = _RPCClientRaw(host, port, timeout)
         # One connection carries one exchange at a time: a reply has no id to match it to its
         # request, so requests made at once wait for their turn.
         self._lock = asyncio.Lock()
         self.password = password
+
+    async def __aenter__(self) -> "RPCClient":
+        # A client from init_rpc_client() is connected already, and keeps its connection
+        await self.connect()
+        return self
+
+    async def __aexit__(self, *exc_info) -> None:
+        await self.close()
 
     @property
     def connected(self) -> bool:
