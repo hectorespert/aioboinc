@@ -46,6 +46,10 @@ class ProjectControlTest(RPCClientTestCase):
         "resume_project": "project_resume",
         "no_new_tasks": "project_nomorework",
         "allow_new_tasks": "project_allowmorework",
+        "reset_project": "project_reset",
+        "detach_project": "project_detach",
+        "detach_project_when_done": "project_detach_when_done",
+        "dont_detach_project_when_done": "project_dont_detach_when_done",
     }
 
     async def test_each_op_sends_its_request(self):
@@ -60,6 +64,18 @@ class ProjectControlTest(RPCClientTestCase):
         self.assertEqual(
             self.boinc.requests, ["<project_suspend>" + PROJECT_XML + "</project_suspend>"]
         )
+
+
+class DetachProjectOfAccountManagerTest(RPCClientTestCase):
+
+    # As the BOINC client answers for a project attached via an account manager
+    replies = (
+        "<boinc_gui_rpc_reply><error>must detach using account manager</error></boinc_gui_rpc_reply>",
+    )
+
+    async def test_raises_command_error(self):
+        with self.assertRaisesRegex(BOINCCommandError, "must detach using account manager"):
+            await self.client.detach_project(PROJECT_URL)
 
 
 class UnknownProjectTest(RPCClientTestCase):

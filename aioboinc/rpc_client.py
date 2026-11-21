@@ -519,6 +519,70 @@ class RPCClient:
         """
         return await self._project_op(Tag.PROJECT_ALLOWMOREWORK, project)
 
+    async def reset_project(self, project: Project | str):
+        """
+        Reset a project, as Reset project in the BOINC Manager: abort its tasks, without reporting
+        them, and delete its files, which it downloads again. It stays attached. It cannot be
+        undone, and the work done on its tasks is lost.
+
+        Args:
+            project: The project, as a Project from get_project_status() or its master URL.
+
+        Returns:
+            True, or the reply when BOINC answers something other than success, as for
+            evaluate_reply(). A project the BOINC client is not attached to raises
+            BOINCCommandError.
+        """
+        return await self._project_op(Tag.PROJECT_RESET, project)
+
+    async def detach_project(self, project: Project | str):
+        """
+        Detach from a project, as Remove in the BOINC Manager: reset it and forget it. It cannot be
+        undone, and the work done on its tasks is lost; to keep it, see detach_project_when_done().
+
+        Args:
+            project: The project, as a Project from get_project_status() or its master URL.
+
+        Returns:
+            True, or the reply when BOINC answers something other than success, as for
+            evaluate_reply(). A project the BOINC client is not attached to raises
+            BOINCCommandError, and so does one attached via an account manager, which only the
+            account manager can detach.
+        """
+        return await self._project_op(Tag.PROJECT_DETACH, project)
+
+    async def detach_project_when_done(self, project: Project | str):
+        """
+        Detach from a project once its tasks are done and reported, without asking it for work
+        meanwhile, as no_new_tasks() does. Until then dont_detach_project_when_done() cancels it.
+        A project attached via an account manager is detached after the next request to the
+        account manager.
+
+        Args:
+            project: The project, as a Project from get_project_status() or its master URL.
+
+        Returns:
+            True, or the reply when BOINC answers something other than success, as for
+            evaluate_reply(). A project the BOINC client is not attached to raises
+            BOINCCommandError.
+        """
+        return await self._project_op(Tag.PROJECT_DETACH_WHEN_DONE, project)
+
+    async def dont_detach_project_when_done(self, project: Project | str):
+        """
+        Cancel detach_project_when_done(), and ask the project for work again, as
+        allow_new_tasks() does
+
+        Args:
+            project: The project, as a Project from get_project_status() or its master URL.
+
+        Returns:
+            True, or the reply when BOINC answers something other than success, as for
+            evaluate_reply(). A project the BOINC client is not attached to raises
+            BOINCCommandError.
+        """
+        return await self._project_op(Tag.PROJECT_DONT_DETACH_WHEN_DONE, project)
+
     async def _project_op(self, tag: str, project: Project | str):
         req = ET.Element(tag)
         url = ET.SubElement(req, Tag.PROJECT_URL)
