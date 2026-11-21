@@ -11,6 +11,11 @@
 - **Added** the type of the reply of `get_results()`: `Result`, with `ActiveTask`.
 - **Added** the types of the replies of `get_messages()` and `get_notices()`: `Message`, and
   `Notices` with `Notice`.
+- **Added** the types of the replies of `get_file_transfers()`, `get_statistics()`,
+  `get_daily_xfer_history()`, `get_old_results()`, `get_newer_version()` and `get_acct_mgr_info()`:
+  `FileTransfer`, with `PersistentFileXfer` and `FileXfer`, `ProjectStatistics`, with
+  `DailyStatistics`, `DailyXfer`, `OldResult`, `NewerVersion` and `AcctMgrInfo`. With them every
+  reply is typed.
 - **Changed** the flags of a `Project` that BOINC sends only when they are set, such as
   `suspended_via_gui`, `dont_request_more_work` or `attached_via_acct_mgr`, to be `False` when it
   does not, instead of raising `AttributeError`. The values it sends only sometimes,
@@ -21,6 +26,9 @@
   `suspended_via_gui`, `ready_to_report` or `scheduler_wait`, and those of its `active_task`, such
   as `too_large`, to be there, `False`, when it does not. `"ready_to_report" in task` is now always
   true; `task["ready_to_report"]` says whether it is.
+- **Changed** `manager_must_quit` of `get_cc_status()`, and `have_credentials` and
+  `cookie_required` of `get_acct_mgr_info()`, to be there, `False`, when BOINC does not send them,
+  like the flags of a project or a task.
 - **Fixed** `p_calculated` of `get_host_info()` coming as a `float`. It is when the CPU benchmarks
   last ran, so it is now a `datetime` in UTC, or `None` if they never ran, like the other times.
 - **Changed** `coprocs` of `get_host_info()` from a list to a dict by the name of the resource, as

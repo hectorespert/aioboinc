@@ -9,21 +9,31 @@ from typing import get_type_hints, is_typeddict
 
 import aioboinc
 from aioboinc import (
+    AcctMgrInfo,
     ActiveTask,
     CcStatus,
+    DailyStatistics,
+    DailyXfer,
     DiskUsage,
+    FileTransfer,
+    FileXfer,
     HostInfo,
     Message,
+    NewerVersion,
     Notice,
     Notices,
+    OldResult,
+    PersistentFileXfer,
     Project,
     ProjectDiskUsage,
+    ProjectStatistics,
     Result,
     Version,
     WslDistro,
     WslGpu,
 )
 
+from . import test_queries as queries
 from .fake_boinc import RPCClientTestCase
 from .fixtures import web_state
 from .test_queries import NOTICE, notices_reply
@@ -57,10 +67,9 @@ class CcStatusTypeTest(TypesTest):
     async def test_matches_the_reply(self):
         self.assertMatches(await self.client.get_cc_status(), CcStatus)
 
-    async def test_manager_must_quit_is_not_required(self):
+    async def test_matches_the_reply_with_manager_must_quit(self):
         await self.client.get_cc_status()
         self.assertMatches(await self.client.get_cc_status(), CcStatus)
-        self.assertIn("manager_must_quit", CcStatus.__optional_keys__)
 
 
 class DiskUsageTypeTest(TypesTest):
@@ -180,6 +189,63 @@ class NoticeTypeTest(TypesTest):
         self.assertMatches(notices, Notices)
         for notice in notices["notices"]:
             self.assertMatches(notice, Notice)
+
+
+class FileTransferTypeTest(TypesTest):
+
+    replies = queries.FileTransferTest.replies
+
+    async def test_matches_the_reply(self):
+        for transfer in await self.client.get_file_transfers():
+            self.assertMatches(transfer, FileTransfer)
+            self.assertMatches(transfer["persistent_file_xfer"], PersistentFileXfer)
+            self.assertMatches(transfer["file_xfer"], FileXfer)
+
+
+class StatisticsTypeTest(TypesTest):
+
+    replies = queries.StatisticsTest.replies
+
+    async def test_matches_the_reply(self):
+        for project in await self.client.get_statistics():
+            self.assertMatches(project, ProjectStatistics)
+            for day in project["daily_statistics"]:
+                self.assertMatches(day, DailyStatistics)
+
+
+class DailyXferTypeTest(TypesTest):
+
+    replies = queries.DailyXferHistoryTest.replies
+
+    async def test_matches_the_reply(self):
+        for day in await self.client.get_daily_xfer_history():
+            self.assertMatches(day, DailyXfer)
+
+
+class OldResultTypeTest(TypesTest):
+
+    replies = queries.OldResultsTest.replies
+
+    async def test_matches_the_reply(self):
+        for result in await self.client.get_old_results():
+            self.assertMatches(result, OldResult)
+
+
+class NewerVersionTypeTest(TypesTest):
+
+    replies = queries.NewerVersionTest.replies
+
+    async def test_matches_the_reply(self):
+        self.assertMatches(await self.client.get_newer_version(), NewerVersion)
+
+
+class AcctMgrInfoTypeTest(TypesTest):
+
+    replies = queries.AcctMgrInfoTest.replies + queries.NoAcctMgrTest.replies
+
+    async def test_matches_the_replies(self):
+        self.assertMatches(await self.client.get_acct_mgr_info(), AcctMgrInfo)
+        self.assertMatches(await self.client.get_acct_mgr_info(), AcctMgrInfo)
 
 
 class ExportedTypesTest(TypesTest):

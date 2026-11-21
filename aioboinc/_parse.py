@@ -447,6 +447,11 @@ ACTIVE_TASK_FLAG_TAG = (
 )
 
 
+def with_flags(reply: dict[str, Any], flags: tuple[str, ...]) -> Any:
+    # The flags BOINC sends only when they are set are there, False, when it does not
+    return dict.fromkeys(flags, False) | reply
+
+
 def parse_result(e: ET.Element) -> dict[str, Any]:
     # The flags are there, False, when BOINC does not send them
     result: dict[str, Any] = dict.fromkeys(RESULT_FLAG_TAG, False)

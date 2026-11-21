@@ -10,7 +10,7 @@ A reply may also have keys these do not list, from a newer BOINC client. A state
 enum, or an int for a value the enum does not have yet.
 """
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any, NotRequired, TypedDict
 
 from ._constants import (
@@ -59,8 +59,8 @@ class CcStatus(TypedDict):
     disallow_attach: bool
     simple_gui_only: bool
     max_event_log_lines: int
-    # Only when an update asks the BOINC Manager to quit
-    manager_must_quit: NotRequired[bool]
+    # True only when an update asks the BOINC Manager to quit
+    manager_must_quit: bool
 
 
 class ProjectDiskUsage(TypedDict):
@@ -294,3 +294,127 @@ class Notices(TypedDict):
     # True when BOINC has removed notices, and notices holds all of them, to replace those got before
     refresh: bool
     notices: list[Notice]
+
+
+class PersistentFileXfer(TypedDict):
+    """
+    The retries of a file transfer, as persistent_file_xfer in get_file_transfers()
+    """
+
+    num_retries: int
+    first_request_time: datetime | None
+    next_request_time: datetime | None
+    time_so_far: timedelta
+    # Bytes
+    last_bytes_xferred: float
+    is_upload: bool
+
+
+class FileXfer(TypedDict):
+    """
+    A file transfer under way, as file_xfer in get_file_transfers()
+    """
+
+    estimated_xfer_time_remaining: timedelta
+    # Bytes, and bytes per second
+    bytes_xferred: float
+    file_offset: float
+    xfer_speed: float
+    url: str
+
+
+class FileTransfer(TypedDict):
+    """
+    An upload or a download, from get_file_transfers()
+    """
+
+    # The project, with only its master_url, equal to the URL
+    project_url: Project
+    project_name: str
+    # The name of the file
+    name: str
+    # Bytes
+    nbytes: float
+    max_nbytes: float
+    # 0 or an error, a negative number
+    status: int
+    persistent_file_xfer: PersistentFileXfer
+    # Only while it is under way
+    file_xfer: NotRequired[FileXfer]
+    # Seconds left of the backoff of the transfers of the project, while there is one
+    project_backoff: NotRequired[float]
+
+
+class DailyStatistics(TypedDict):
+    """
+    The credit of a project at the end of a day, in get_statistics()
+    """
+
+    # The midnight in UTC that begins the day
+    day: datetime
+    user_total_credit: float
+    user_expavg_credit: float
+    host_total_credit: float
+    host_expavg_credit: float
+
+
+class ProjectStatistics(TypedDict):
+    """
+    The credit of a project for each day, from get_statistics()
+    """
+
+    master_url: str
+    daily_statistics: list[DailyStatistics]
+
+
+class DailyXfer(TypedDict):
+    """
+    The bytes uploaded and downloaded on a day, from get_daily_xfer_history()
+    """
+
+    # The day in the time zone of the host BOINC runs on
+    when: date
+    up: float
+    down: float
+
+
+class OldResult(TypedDict):
+    """
+    A task BOINC has reported and deleted, from get_old_results()
+    """
+
+    # The project, with only its master_url, equal to the URL
+    project_url: Project
+    result_name: str
+    app_name: str
+    exit_status: int
+    elapsed_time: timedelta
+    cpu_time: timedelta
+    completed_time: datetime | None
+    # When BOINC deleted it
+    create_time: datetime
+
+
+class NewerVersion(TypedDict):
+    """
+    The newest version of the BOINC client, from get_newer_version()
+    """
+
+    # "" when the one running is the newest
+    newer_version: str
+    download_url: str
+
+
+class AcctMgrInfo(TypedDict):
+    """
+    The account manager of the BOINC client, from get_acct_mgr_info()
+    """
+
+    # "" without an account manager
+    acct_mgr_url: str
+    acct_mgr_name: str
+    # Whether BOINC has the login to it, and whether it needs a cookie from its website
+    have_credentials: bool
+    cookie_required: bool
+    # Only when it needs a cookie
+    cookie_failure_url: NotRequired[str]

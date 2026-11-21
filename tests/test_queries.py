@@ -77,9 +77,15 @@ class NoAcctMgrTest(RPCClientTestCase):
 </boinc_gui_rpc_reply>""",
     )
 
-    async def test_the_url_and_name_are_empty(self):
+    async def test_the_url_and_name_are_empty_and_the_flags_false(self):
         self.assertEqual(
-            await self.client.get_acct_mgr_info(), {"acct_mgr_url": "", "acct_mgr_name": ""}
+            await self.client.get_acct_mgr_info(),
+            {
+                "acct_mgr_url": "",
+                "acct_mgr_name": "",
+                "have_credentials": False,
+                "cookie_required": False,
+            },
         )
 
 
@@ -130,6 +136,8 @@ class CcStatusFlagsTest(RPCClientTestCase):
     async def test_flags_are_flags(self):
         status = await self.client.get_cc_status()
         self.assertIs(status["ams_password_error"], False)
+        # BOINC sends it only when it is set
+        self.assertIs(status["manager_must_quit"], False)
         self.assertIs(status["disallow_attach"], False)
         self.assertIs(status["simple_gui_only"], False)
 
