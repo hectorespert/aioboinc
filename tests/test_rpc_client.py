@@ -356,6 +356,7 @@ class WrongReplyTest(RPCClientTestCase):
         "get_messages": "msgs",
         "get_notices": "notices",
         "get_notices_public": "notices",
+        "get_old_results": "old_results",
         "get_project_status": "projects",
         "get_results": "results",
         "get_statistics": "statistics",

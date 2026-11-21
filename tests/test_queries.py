@@ -517,6 +517,55 @@ class NoticesPublicTest(RPCClientTestCase):
         self.assertEqual([n["seqno"] for n in reply["notices"]], [1])
 
 
+class OldResultsTest(RPCClientTestCase):
+
+    # As print_old_results() in client/result.cpp writes them
+    replies = (
+        """<boinc_gui_rpc_reply>
+<old_results>
+    <old_result>
+         <project_url>https://example.org/</project_url>
+         <result_name>ps_261115_input_6462_9_0</result_name>
+         <app_name>period_search</app_name>
+         <exit_status>0</exit_status>
+         <elapsed_time>207.615999</elapsed_time>
+         <cpu_time>0.945063</cpu_time>
+         <completed_time>1792730000.000000</completed_time>
+         <create_time>1792733600.500000</create_time>
+    </old_result>
+</old_results>
+</boinc_gui_rpc_reply>""",
+    )
+
+    async def test_returns_every_task_parsed(self):
+        old_results = await self.client.get_old_results()
+        self.assertEqual(self.boinc.requests, ["<get_old_results/>"])
+        self.assertEqual(
+            old_results,
+            [
+                {
+                    "project_url": "https://example.org/",
+                    "result_name": "ps_261115_input_6462_9_0",
+                    "app_name": "period_search",
+                    "exit_status": 0,
+                    "elapsed_time": timedelta(seconds=207.615999),
+                    "cpu_time": timedelta(seconds=0.945063),
+                    "completed_time": datetime.fromtimestamp(1792730000, UTC),
+                    "create_time": datetime.fromtimestamp(1792733600.5, UTC),
+                }
+            ],
+        )
+        self.assertIsInstance(old_results[0]["project_url"], Project)
+
+
+class NoOldResultsTest(RPCClientTestCase):
+
+    replies = ("<boinc_gui_rpc_reply>\n<old_results>\n</old_results>\n</boinc_gui_rpc_reply>",)
+
+    async def test_returns_an_empty_list(self):
+        self.assertEqual(await self.client.get_old_results(), [])
+
+
 class ProjectStatusTest(RPCClientTestCase):
 
     replies = (web_state.projects,)

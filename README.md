@@ -113,6 +113,7 @@ To read the state of the BOINC client:
 | `get_messages(seqno=0, translatable=False)` | A list of the messages newer than `seqno` |
 | `get_notices(seqno=0)` | The notices newer than `seqno`, as a dict with `notices`, a list, and `refresh`, `True` when the list is complete and replaces the notices got before. It needs `authorize()` even locally |
 | `get_notices_public(seqno=0)` | The same, without the private notices, and without `authorize()` |
+| `get_old_results()` | A list of the tasks reported and deleted in the last hour, which `get_results()` no longer has |
 | `get_project_status()` | A list of the projects, as `Project` objects, importable from `aioboinc`, that compare equal to their URL |
 | `get_results(active_only=False)` | A list of the tasks; with `active_only=True`, only those started and not finished |
 | `get_statistics()` | The credit of the user and of the host for each day, as a list with a dict for each project, with its `master_url` and its `daily_statistics` |
