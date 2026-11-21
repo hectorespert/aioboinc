@@ -134,13 +134,14 @@ a message is a `MessagePriority`, the `sched_rpc_pending` of a project a `RpcRea
 `docker_type` of the host a `DockerType`. A number the enum does not have, from a newer BOINC
 client, comes as an `int`. The type depends on the element, and an element the parser does not know
 comes as a `str`. The replies of `exchange_versions()`, `get_cc_status()`, `get_disk_usage()`,
-`get_host_info()` and `get_results()` are typed, as the `TypedDict` `Version`, `CcStatus`,
-`DiskUsage`, `HostInfo` and `Result` importable from `aioboinc`: still dicts, they let an editor or
-mypy check their keys. The attributes of a `Project` are typed too. A flag of a project or a task
-that BOINC sends only when it is set, such as `suspended_via_gui`, is `False` when it does not, and
-a value it sends only sometimes, such as `download_backoff`, is `None`. What a project sends once
-for each resource, such as CPU or NVIDIA, is a dict by the name of the resource, as
-`rsc_backoff_time`, or a list of the names, as `no_rsc_apps`.
+`get_host_info()`, `get_results()`, `get_messages()` and `get_notices()` are typed, as the
+`TypedDict` `Version`, `CcStatus`, `DiskUsage`, `HostInfo`, `Result`, `Message` and `Notices`
+importable from `aioboinc`: still dicts, they let an editor or mypy check their keys. The attributes
+of a `Project` are typed too. A flag of a project or a task that BOINC sends only when it is set,
+such as `suspended_via_gui`, is `False` when it does not, and a value it sends only sometimes, such
+as `download_backoff`, is `None`. What a project sends once for each resource, such as CPU or
+NVIDIA, is a dict by the name of the resource, as `rsc_backoff_time`, or a list of the names, as
+`no_rsc_apps`.
 
 To control it, after `authorize()`. Each returns `True` when BOINC answers with success:
 

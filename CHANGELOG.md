@@ -9,6 +9,8 @@
 - **Added** the type of the reply of `get_host_info()`: `HostInfo`, with `WslDistro` and `WslGpu`.
 - **Added** the types of the attributes of `Project`, from `get_project_status()`.
 - **Added** the type of the reply of `get_results()`: `Result`, with `ActiveTask`.
+- **Added** the types of the replies of `get_messages()` and `get_notices()`: `Message`, and
+  `Notices` with `Notice`.
 - **Changed** the flags of a `Project` that BOINC sends only when they are set, such as
   `suspended_via_gui`, `dont_request_more_work` or `attached_via_acct_mgr`, to be `False` when it
   does not, instead of raising `AttributeError`. The values it sends only sometimes,

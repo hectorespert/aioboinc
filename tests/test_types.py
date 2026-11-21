@@ -13,6 +13,9 @@ from aioboinc import (
     CcStatus,
     DiskUsage,
     HostInfo,
+    Message,
+    Notice,
+    Notices,
     Project,
     ProjectDiskUsage,
     Result,
@@ -23,6 +26,7 @@ from aioboinc import (
 
 from .fake_boinc import RPCClientTestCase
 from .fixtures import web_state
+from .test_queries import NOTICE, notices_reply
 
 
 class TypesTest(RPCClientTestCase):
@@ -156,6 +160,26 @@ class ResultTypeTest(TypesTest):
                 self.assertMatches(result, Result)
                 if "active_task" in result:
                     self.assertMatches(result["active_task"], ActiveTask)
+
+
+class MessageTypeTest(TypesTest):
+
+    replies = (web_state.msgs,)
+
+    async def test_matches_the_reply(self):
+        for message in await self.client.get_messages():
+            self.assertMatches(message, Message)
+
+
+class NoticeTypeTest(TypesTest):
+
+    replies = (notices_reply(NOTICE.format(seqno=1), NOTICE.format(seqno=2)),)
+
+    async def test_matches_the_reply(self):
+        notices = await self.client.get_notices()
+        self.assertMatches(notices, Notices)
+        for notice in notices["notices"]:
+            self.assertMatches(notice, Notice)
 
 
 class ExportedTypesTest(TypesTest):
