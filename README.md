@@ -8,8 +8,8 @@
 | aioboinc/\_parse.py       |       71 |        0 |       16 |        0 |    100% |           |
 | aioboinc/\_raw\_client.py |      101 |        2 |       16 |        0 |     98% |     31-32 |
 | aioboinc/exceptions.py    |        7 |        0 |        0 |        0 |    100% |           |
-| aioboinc/rpc\_client.py   |      205 |        0 |       26 |        0 |    100% |           |
-| **TOTAL**                 |  **389** |    **2** |   **58** |    **0** | **99%** |           |
+| aioboinc/rpc\_client.py   |      208 |        0 |       26 |        0 |    100% |           |
+| **TOTAL**                 |  **392** |    **2** |   **58** |    **0** | **99%** |           |
 
 
 ## Setup coverage badge
