@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.12.1
 
 - **Fixed** an empty reply of `exchange_versions()`, `get_acct_mgr_info()`, `get_cc_status()` or
   `get_host_info()`: it is now `{}`, with the flags `False` where the reply has them, as an empty
