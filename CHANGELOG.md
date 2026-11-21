@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **Fixed** the links to the GUI RPC protocol in the README and the docstrings. They pointed at the
+  old BOINC wiki, which answers 404; they point at the BOINC wiki on GitHub.
+
 ## 0.7.0
 
 - **Fixed** flags that came as the strings `"0"` and `"1"`, because the parser did not know them:
