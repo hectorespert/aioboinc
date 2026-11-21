@@ -190,14 +190,14 @@ class RPCClient:
 
     async def _authorize(self, password: str):
         host = self._raw_client.host
-        nonce = self._check_reply(await self._raw_client.request(ET.Element(Tag.AUTH1)))
+        nonce = self._check_reply((await self._raw_client.request(ET.Element(Tag.AUTH1)))[0])
         if nonce.tag != Tag.NONCE or nonce.text is None:
             raise BOINCProtocolError(f"{host} did not answer auth1 with a nonce")
         auth2 = ET.Element(Tag.AUTH2)
         nonce_hash = ET.SubElement(auth2, Tag.NONCE_HASH)
         salted = nonce.text + password
         nonce_hash.text = md5(bytes(salted, encoding="UTF8")).hexdigest()
-        reply = await self._raw_client.request(auth2)
+        reply = (await self._raw_client.request(auth2))[0]
         if reply.tag == Tag.UNAUTHORIZED:
             raise BOINCAuthError(f"{host} rejected the password")
         if self._check_reply(reply).tag != Tag.AUTHORIZED:
@@ -210,8 +210,16 @@ class RPCClient:
         BOINCCommandError if it answers with an error, and BOINCProtocolError if the reply is not
         reply_tag, when one is given
         """
+        return (await self._request_reply(req, reply_tag))[0]
+
+    async def _request_reply(self, req: ET.Element, reply_tag: str | None = None):
+        """
+        As _request(), returning the boinc_gui_rpc_reply element, for a reply of more than one
+        element
+        """
         async with self._lock:
-            reply = self._check_reply(await self._raw_client.request(req))
+            whole = await self._raw_client.request(req)
+            reply = self._check_reply(whole[0])
             if reply_tag is not None and reply.tag != reply_tag:
                 # Not the reply to this request, so what comes next on the connection cannot be
                 # trusted to be the reply to the next one either. Dropped while holding the lock,
@@ -220,7 +228,7 @@ class RPCClient:
                 raise BOINCProtocolError(
                     f"{self._raw_client.host} answered {req.tag} with {reply.tag}, not {reply_tag}"
                 )
-        return reply
+        return whole
 
     @staticmethod
     def _check_reply(reply: ET.Element) -> ET.Element:
@@ -396,6 +404,25 @@ class RPCClient:
             }
             for p in await self._request(req, Tag.STATISTICS)
         ]
+
+    async def get_newer_version(self):
+        """
+        Get the newest version of the BOINC client, when it is newer than the one running
+
+        BOINC asks the BOINC website for it before answering, so the reply may take seconds, and
+        longer without network: give the client a timeout long enough.
+
+        Returns:
+            A dict with:
+                newer_version: The version, such as "8.2.11", or "" when the one running is the
+                    newest. When BOINC cannot reach the website, it is what it found the last
+                    time.
+                download_url: The page to download it from.
+        """
+        req = ET.Element(Tag.GET_NEWER_VERSION)
+        # The two come as elements of their own, side by side in the reply
+        reply = await self._request_reply(req, Tag.NEWER_VERSION)
+        return {c.tag: parse_generic(c) for c in reply}
 
     async def get_notices(self, seqno=0):
         """

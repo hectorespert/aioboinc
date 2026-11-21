@@ -564,6 +564,27 @@ class NoOldResultsTest(RPCClientTestCase):
 
     async def test_returns_an_empty_list(self):
         self.assertEqual(await self.client.get_old_results(), [])
+class NewerVersionTest(RPCClientTestCase):
+
+    # As handle_get_newer_version() in client/gui_rpc_server_ops.cpp writes it: two elements, not
+    # one with both
+    replies = (
+        "<boinc_gui_rpc_reply>\n<newer_version>8.2.11</newer_version>\n"
+        "<download_url>https://boinc.berkeley.edu/download.php</download_url>\n</boinc_gui_rpc_reply>",
+        "<boinc_gui_rpc_reply>\n<newer_version></newer_version>\n"
+        "<download_url>https://boinc.berkeley.edu/download.php</download_url>\n</boinc_gui_rpc_reply>",
+    )
+
+    async def test_returns_the_version_and_where_to_download_it(self):
+        self.assertEqual(
+            await self.client.get_newer_version(),
+            {"newer_version": "8.2.11", "download_url": "https://boinc.berkeley.edu/download.php"},
+        )
+        self.assertEqual(self.boinc.requests, ["<get_newer_version/>"])
+
+    async def test_the_version_is_empty_when_there_is_no_newer_one(self):
+        await self.client.get_newer_version()
+        self.assertEqual((await self.client.get_newer_version())["newer_version"], "")
 
 
 class ProjectStatusTest(RPCClientTestCase):
